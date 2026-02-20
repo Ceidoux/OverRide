@@ -1,4 +1,4 @@
-# ? OverRide
+# 🧙🏻‍♂️ OverRide
 
 ## 📝 About
 
@@ -38,4 +38,3 @@ Throughout the different levels, several tools and techniques are used to solve 
 * Exploiting vulnerabilities, including bypass techniques, code injection, program manipulation, and reverse engineering.
 
 #### Concept covered
-
