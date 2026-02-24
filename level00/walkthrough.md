@@ -3,19 +3,41 @@
 ## 1. Inspect The Executable
 
 ```bash
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      FILE
+Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   /home/users/level00/level00
 level00@OverRide:~$ ls -l
 total 8
 -rwsr-s---+ 1 level01 users 7280 Sep 10  2016 level00
 ```
 
-
-The program have the s bits. nananan.
+We can see that the binary has the `s` bit set on the **execution permission**, which means the program will run with **`level01` privileges**.
 
 ```bash
-program test in bash
+level00@OverRide:~$ ./level00 
+***********************************
+* 	     -Level00 -		  *
+***********************************
+Password:password
+
+Invalid Password!
+level00@OverRide:~$ ./level00 
+***********************************
+* 	     -Level00 -		  *
+***********************************
+Password:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
+The program asks a password and tests it.
+
 ## 2. Analyze The Executable
+
+In this project, we are gonna use **gdb** *(on the VM)* and **Ghidra** *(on the host machine)* to **analyze** the binary.
+- In **gdb**, we can **disassemble functions** using commands like `disas main`.
+- In **Ghidra**, we can load the executable and obtain a **human-readable decompiled** version of the code in **pseudo-C**.
+
+The full disassembly code is available in separate files:
+- **Assembly code**: see the `gdb-dump` file.
+- **Pseudo-C code**: see the `source` file.
 
 ```bash
 
@@ -28,19 +50,26 @@ Non-debugging symbols:
 [...]
 ```
 
+Using the gdb command `info functions`, we can list all functions present in the binary.
+Here, we find only the function: `main`.
+
 ### Program Behavior
 
 #### main function
 
-The main function ask a password and check if it's correct or not. If the correct password is given, it prints "Authenticated!" and spawn a shell with `system("/bin/sh")`.
+The `main` function ask a password and check if it's correct or not. If the correct password is given, it prints "Authenticated!" and spawn a shell with `system("/bin/sh")`.
 
 ## 3. Identify The Vulnerability
 
 With the program decompiled we can see the if statement that check the password.
 
 ```c
-if (xxx)
-	system()
+if (local_14[0] != 0x149c) {
+    puts("\nInvalid Password!");
+  }
+  else {
+    puts("\nAuthenticated!");
+    system("/bin/sh");
 ```
 
 It's compare the string with the value `0x149c` in hexadecimal.
