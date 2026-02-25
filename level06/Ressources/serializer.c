@@ -5,6 +5,9 @@
 
 int main(int argc, char **argv)
 {
+	if (argc != 2 || strlen(argv[1]) < 6)
+		return 0;
+
 	int u = argv[1][3] ^ 0x1337U;
 	printf("argv[1][3] ^ 0x1337U : %d\n", u);
 
@@ -23,7 +26,7 @@ int main(int argc, char **argv)
 			return 0;
 		}	
 		int c = argv[1][i] ^ h;
-		printf("argv[1][i] ^ h : %d\n", c);
+		printf("argv[1][%d] ^ h : %d\n", i, c);
 
 		int g = c % 0x539;
 		printf("c %% 0x539 : %d\n", g);
@@ -32,13 +35,7 @@ int main(int argc, char **argv)
 		printf("h += g : %d\n\n", h);
 	}
 
-	printf("\n\n - end --\n\n");
-	printf("\t%d\n", h);
-
-	if (atoi(argv[2]) == h)
-	{
-		printf("success !");
-	}
+	printf("\nserialization of\t%s\t: %d\n", argv[1], h);
 
 	return 1;
 }

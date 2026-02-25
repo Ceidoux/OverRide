@@ -27,7 +27,7 @@ level00@OverRide:~$ ./level00
 Password:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
-The program asks a password and tests it.
+The program asks for a password and tests it.
 
 ## 2. Analyze The Executable
 
@@ -40,7 +40,6 @@ The full disassembly code is available in separate files:
 - **Pseudo-C code**: see the `source` file.
 
 ```bash
-
 (gdb) info functions 
 All defined functions:
 
@@ -57,11 +56,12 @@ Here, we find only the function: `main`.
 
 #### main function
 
-The `main` function ask a password and check if it's correct or not. If the correct password is given, it prints "Authenticated!" and spawn a shell with `system("/bin/sh")`.
+The `main` function asks for a password and checks if it's correct. If the correct password is provided, it prints "Authenticated!" and spawns a shell with `system("/bin/sh")`.
 
-## 3. Identify The Vulnerability
+## 3. Find The Password
 
-With the program decompiled we can see the if statement that check the password.
+With the program decompiled, we can see the `if` statement that checks the password:
+
 
 ```c
 if (local_14[0] != 0x149c) {
@@ -72,14 +72,14 @@ if (local_14[0] != 0x149c) {
     system("/bin/sh");
 ```
 
-It's compare the string with the value `0x149c` in hexadecimal.
+It compares the input with the value `0x149c` (hexadecimal).
 
 ```bash
 > python3 -c 'print(0x149c)'
 5276
 ```
 
-In decimal it equal to `5276`. So we simply need to enter this value as password.
+In decimal, it equals **`5276`**. We simply need to enter this value as the password.
 
 ## 4. Capture The Flag
 
