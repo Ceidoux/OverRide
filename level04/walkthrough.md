@@ -31,7 +31,7 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ^C
 ```
 
-The program asks for a shellcode, and appears to stop a forked child process.
+The program asks for shellcode and appears to be using a forked child process.
 
 ## 2. Analyze The Executable
 
@@ -55,22 +55,7 @@ Here, we find only the function: `main`.
 The `main` function first launches a `fork()` process. If the process is the child process, it calls `ptrace(PTRACE_TRACEME,0,0,0)` to trace its own process.
 Then it reads user input with `gets()`.
 
-If not *(parent process)*, *it waits for the child process to finish, then exits.*
-```c
-ERROR NOT FINISHED:
-      wait(&local_a4);
-      local_20 = local_a4;
-      if (((local_a4 & 0x7f) == 0) ||
-         (local_1c = local_a4, '\0' < (char)(((byte)local_a4 & 0x7f) + 1) >> 1)) {
-        puts("child is exiting...");
-        return 0;
-      }
-      local_18 = ptrace(PTRACE_PEEKUSER,local_14,0x2c,0);
-    } while (local_18 != 0xb);
-    puts("no exec() for you");
-    kill(local_14,9);
-```
-
+Otherwise *(parent process)*, it waits for the child process to finish, then exits. Or it kills the process if an `execve()` call is detected.
 
 ## 3. Exploit Development
 
@@ -78,132 +63,98 @@ For this level, we will use a new attack : **ret2libc**.
 
 ### RET2LIBC Explanation
 
-The `ret2libc` *(return-to-libc)* attack uses functions and strings stored in the C library. The payload is as follow :
+The `ret2libc` *(return-to-libc)* attack uses functions and strings already present in the C library and loaded in memory instead of injecting shellcode.
+
+#### In Normal Case
+
+In x86-32, when we call a function, several instructions are made on the stack.
+First the caller pushes its arguments on the stack then use the `call` instruction.
+
+![img](Ressources/function-call-00.png)
+
+*(Note: ESP points to the top of the stack, where `push` and `pop` operations occur.)*
+
+A `call` instruction does 2 things :
+- Pushes the caller next instruction as return address *(`SAVED EIP`)* onto the stack.
+- Jumps to the target function.
+
+![img](Ressources/function-call-01.png)
+
+In the target function, the prologue does 3 things :
+- Pushes EBP onto the stack. - `push ebp`
+- Moves EBP to ESP. - `mov ebp, esp` *(`mov %esp,%ebp` in GDB)*
+
+![img](Ressources/function-call-02.png)
+
+- Subtracts from ESP to get memory for the locals variables - `sub esp, X`
+
+![img](Ressources/function-call-03.png)
+
+---
+
+When returning from a function, 2 instructions are made :
+- `leave` :
+	- Moves EBP to ESP. - `mov esp, ebp` *(`mov %ebp,%esp` in GDB)*
+	- Pops SAVED EBP into EBP register, to get to the old stack frame base pointer. - `pop ebp`.
+
+![img](Ressources/function-ret-00.png)
+
+
+- `ret` : 
+	- Pops SAVED EIP into EIP register, to get to the old stack frame next instruction. - `pop eip`
+	- Jumps to EIP.
+
+![img](Ressources/function-ret-01.png)
+
+---
+
+#### In ret2libc Case
+
+With a buffer overflow, we can build the stack to look like a `system` `call`.
+The payload structure is as follows :
 
 ```
 [ padding ] [ system() address ] [ ret address of system() ] [ "/bin/sh" address ]
 └────┬────┘ └─────────┬────────┘ └────────────┬────────────┘ └─────────┬─────────┘
 	 ?				  4						  4						   4
 
-The size of padding depends on how many bytes it need to overflow on the saved EIP.
+Padding size depends on how many bytes it need to overflow on the saved EIP.
 ```
 
-- **padding**: Fills the buffer until we reach the saved EIP.
-- **system() address**: Overwrites saved EIP to redirect execution to `system()`.
-- **return address**: Where to go after `system()` returns *(typically `exit()`)*.
-- **"/bin/sh" address**: Argument passed to `system()`.
+*(Note: We will use `exit()` address as `return address of system()`)*
 
-```
-ERROR NOT FINISHED:
-```
+With this injection, the stack is modified as follows :
 
-The `return address` is where execution should go after `system()` returns *(typically `exit()` to cleanly terminate)*. *It's secure from STACK CANARY.*
+![img](Ressources/ret2libc.png)
 
-To understand why this information are in this order, we need to observe what's happening during a new call in the stack.
-
-#### Stack New Function Call
-
-```
-ERROR NOT FINISHED:
-toutes les explications de ca, oskour
-```
-
-Stack on function 1:
-```
-Adresse haute
-┌─────────────────────────────────────────┐
-│  ...           │  autres args           │
-├─────────────────────────────────────────┤
-│  EBP + 12      │  arg 2 funct 1         │
-├─────────────────────────────────────────┤
-│  EBP + 8       │  arg 1 funct 1         │
-├─────────────────────────────────────────┤
-│  EBP + 4       │  saved EIP             │
-├─────────────────────────────────────────┤
-│  EBP           │  saved EBP             │
-├─────────────────────────────────────────┤
-│  EBP - 4       │  début vars locales    │
-├─────────────────────────────────────────┤
-│  ...           │  ...                   │  ← ESP
-└─────────────────────────────────────────┘
-Adresse basse
-```
-
-Stack finish function 1, `leave`.
-leave : move esp, ebp.
-
-ESP remonte au niveau d'EBP.
-
-```
-Adresse haute
-┌─────────────────────────────────────────┐
-│  ...           │  autres args           │
-├─────────────────────────────────────────┤
-│  EBP + 12      │  arg 2 funct 1         │
-├─────────────────────────────────────────┤
-│  EBP + 8       │  arg 1 funct 1         │
-├─────────────────────────────────────────┤
-│  EBP + 4       │  saved EIP             │
-├─────────────────────────────────────────┤
-│  EBP           │  saved EBP             │ ← ESP
-├─────────────────────────────────────────┤
-│  EBP - 4       │  début vars locales    │ --- ne sont plus interresante car sous ESP
-├─────────────────────────────────────────┤
-│  ...           │  ...                   │  
-└─────────────────────────────────────────┘
-Adresse basse
-```
-leave : pop ebp.
-Le padding est poppé dans EBP. ESP avance de 4.
-epb = SAVED EBP
-
-```
-Adresse haute
-┌─────────────────────────────────────────┐
-│  ...           │  autres args           │
-├─────────────────────────────────────────┤
-│	nowhere		 │  arg 2 funct 1         │
-├─────────────────────────────────────────┤
-│	nowhere		 │  arg 1 funct 1         │
-├─────────────────────────────────────────┤
-│	nowhere		 │  saved EIP             │ ← ESP
-├─────────────────────────────────────────┤
-│	nowhere		 │  début vars locales    │ --- ne sont plus interresante car sous ESP
-├─────────────────────────────────────────┤
-│  ...           │  ...                   │  
-└─────────────────────────────────────────┘
-Adresse basse
-```
-
-Stack finish function 1, `ret`.
-ret : pop eip
-eip = SAVED EIP
-
-```
-Adresse haute
-┌─────────────────────────────────────────┐
-│  ...           │  autres args           │
-├─────────────────────────────────────────┤
-│	nowhere		 │  arg 2 funct 1         │
-├─────────────────────────────────────────┤
-│	nowhere		 │  arg 1 funct 1		  │ ← ESP
-├─────────────────────────────────────────┤
-│	nowhere		 │  début vars locales    │ --- ne sont plus interresante car sous ESP
-├─────────────────────────────────────────┤
-│  ...           │  ...                   │  
-└─────────────────────────────────────────┘
-Adresse basse
-```
- ... ? ...
+- `leave` instruction is called :
+	- Moves EBP to ESP. - `mov esp, ebp` *(`mov %ebp,%esp` in GDB)*
+	- Pops SAVED EBP into EBP register, to get to the old stack frame base pointer. - `pop ebp`.
 
 
-Donc lors de la ret2libc attack, il se passe :
+![img](Ressources/ret2libc-00.png)
 
-#### ret2libc Visualization
+- `ret` instruction is called :
+	- Pops SAVED EIP into EIP register, to get to the old stack frame next instruction. - `pop eip`
+	- Jumps to EIP.
 
-... ? ...
 
-### Get Exploit Values
+![img](Ressources/ret2libc-01.png)
+
+Arriving in `system` function, its prologue does 3 things :
+- Pushes EBP onto the stack. - `push ebp`
+- Moves EPB to ESP. - `mov ebp, esp` *(`mov %esp,%ebp` in GDB)*
+
+At this point, `arg1` and `arg2` on the stack are now respectively `saved EIP` and `arg1` of `system()`.
+So what we injected as `exit()` address is now at `EBP + 4`, system's return address *(`saved EIP`)*, and `"/bin/sh"` address is now at `EBP + 8`, system's first argument.
+
+![img](Ressources/ret2libc-02.png)
+
+- Subtracts from ESP to get memory for the locals variables - `sub esp, X`
+
+![img](Ressources/ret2libc-03.png)
+
+### Get The Exploit Values
 
 First, we need to determine the size of the padding.
 

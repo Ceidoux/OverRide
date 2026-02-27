@@ -5,18 +5,24 @@
 
 int main(int argc, char **argv)
 {
-	if (argc != 2 || strlen(argv[1]) < 6)
-		return 0;
+	int debug;
+
+	if ((argc == 3 && (debug = (argv[2][0] != '-' || argv[2][1] != 'd')))
+		&& (argc != 2 || strlen(argv[1]) < 6))
+		return 1;
 
 	int u = argv[1][3] ^ 0x1337U;
-	printf("argv[1][3] ^ 0x1337U : %d\n", u);
+	if (!debug)
+		printf("argv[1][3] ^ 0x1337U : %d\n", u);
 
 	int h = u + 0x5eeded;
-	printf("u + 0x5eeded : %d\n", h);
+	if (!debug)
+		printf("u + 0x5eeded : %d\n", h);
 
 	int len = strlen(argv[1]);
 
-	printf("\n\n");
+	if (!debug)
+		printf("\n\n");
 
 	for (int i = 0; i < len; i++)
 	{
@@ -26,16 +32,22 @@ int main(int argc, char **argv)
 			return 0;
 		}	
 		int c = argv[1][i] ^ h;
-		printf("argv[1][%d] ^ h : %d\n", i, c);
+		if (!debug)
+			printf("argv[1][%d] ^ h : %d\n", i, c);
 
 		int g = c % 0x539;
-		printf("c %% 0x539 : %d\n", g);
+		if (!debug)
+			printf("c %% 0x539 : %d\n", g);
 		
 		h += g;
-		printf("h += g : %d\n\n", h);
+		if (!debug)
+			printf("h += g : %d\n\n", h);
 	}
 
 	printf("\nserialization of\t%s\t: %d\n", argv[1], h);
-
-	return 1;
+	
+	
+	if (debug)
+		printf("\nto see step by step, use the program with `-d` as 2nd argument.\n");
+	return 0;
 }
