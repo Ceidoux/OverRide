@@ -31,7 +31,7 @@ level02@OverRide:~$ ./level02
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa does not have access!
 ```
 
-The program asks for a username and a password. There is no sign of overflow possible at first sight.
+The program **asks** for a **username** and a **password**. There is no sign of overflow possible at first sight.
 
 ## 2. Analyze The Executable
 
@@ -53,14 +53,14 @@ Here, we find only the function: `main`.
 
 #### main function
 
-The `main` function opens the file `"/home/users/level03/.pass"` in read mode and stores its content in the `local_a8` variable.
+The `main` function **opens the file** `"/home/users/level03/.pass"` in read mode and **stores its content** in the `local_a8` variable.
 
-It then asks for a username, which is not verified, and a password. If the password equals the file content, it calls `system("/bin/sh")`. Otherwise, it prints the `username` followed by the message `" does not have access!"`.
+It then **asks** for a **username**, which is not verified, and a **password**. If the password equals the file content, it calls `system("/bin/sh")`. Otherwise, it **prints the `username`** followed by the message `" does not have access!"`.
 
 
 ## 3. Exploit Development	
 
-The vulnerability comes from the end of the program in the message print in the case of a wrong password :
+The **vulnerability** comes from the **end of the program** in the **message print** in the case of a **wrong password** :
 ```c
   printf(local_78);
   puts(" does not have access!");

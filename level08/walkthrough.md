@@ -34,7 +34,7 @@ level08@OverRide:~$ cat backups/.log
 LOG: Starting back up: /tmp/test
 ```
 
-The program takes a filename as argument, attempts to copy it to `./backups/<filename>`, and logs the operation to `backups/.log`.
+The program **takes** a **filename** as argument, **attempts to copy** it to `./backups/<filename>`, and **logs** the operation to `backups/.log`.
 
 ## 2. Analyze The Executable
 
@@ -56,32 +56,32 @@ Here, we find 2 functions: `main`, and `log_wrapper`.
 
 #### main function
 
-The `main` function takes a filename argument, opens `./backups/.log` for logging, then reads the source file byte-by-byte and writes to a destination file constructed as `./backups/` + filename.
+The `main` function **takes** a **filename argument**, **opens** `./backups/.log` for logging, then **reads** the **source file** byte-by-byte and **writes** to a **destination file** constructed as `./backups/ + filename`.
 
 #### log_wrapper function
 
-The `log_wrapper` function logs messages to the log file.
+The `log_wrapper` function **logs messages** to the log file.
 
 ## 3. Identify The Vulnerability
 
-The vulnerability lies in how the program constructs the destination path:
+The vulnerability lies in how the program **constructs the destination path** :
 ```c
 	builtin_strncpy(local_78, "./backups/", 0xb);
 	[...]
 	strncat(local_78, (char *)param_2[1], 99 - (~uVar4 - 1));
 ```
 
-The program concatenates `"./backups/"` with the user-provided filename without validation. If we provide an **absolute path** like `/home/users/level09/.pass`, the result becomes :
+The program **concatenates** `"./backups/"` with the user-provided **filename** without validation. If we provide an **absolute path** like `/home/users/level09/.pass`, the result becomes :
 
 ```
 ./backups/home/users/level09/.pass
 ```
 
-This creates a relative path from the current working directory. The program will:
+This **creates** a **relative path** from the current working directory. The program will:
 - Read `/home/users/level09/.pass` *(has permission because it runs as level09)*.
 - Write to `./backups/home/users/level09/.pass` *(relative to current directory)*.
 
-By executing the program from `/tmp` and creating the directory structure `/tmp/backups/home/users/level09/`, we can trick the program into copying the `.pass` file to a location readable by the `level08` user.
+By **executing** the program **from `/tmp`** and creating the **directory structure `/tmp/backups/home/users/level09/`**, we can trick the program into copying the `.pass` file to a location readable by the `level08` user.
 
 ## 4. Capture The Flag
 

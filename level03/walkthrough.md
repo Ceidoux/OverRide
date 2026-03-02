@@ -36,7 +36,7 @@ Password:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 Invalid Password
 ```
 
-The program asks for a password and tests it.
+The program **asks** for a **password** and **tests it**.
 
 ## 2. Analyze The Executable
 
@@ -59,29 +59,29 @@ Here, we find 3 functions: `main`, `test` and `decrypt`.
 
 #### main function
 
-The `main` function creates a random seed based on the time at the start of the program. Then it asks for a password and calls `test()`.
+The `main` function creates a random seed based on the time at the start of the program. Then it **asks** for a **password** and calls `test()`.
 
 #### test function
 
-The `test` function function calculates the offset between its `param_1`  and `param_2` *(the hardcoded value : `0x1337d00d` (`322424845` in decimal))*.
+The `test` function function **calculates the offset** between its `param_1`  and `param_2` *(the hardcoded value : `0x1337d00d` (`322424845` in decimal))*.
 
-Then, the program calls the `decrypt` function with a key that depends on the offset.
+Then, the program **calls** the `decrypt` function with a **key** that depends on the offset.
 
-For offsets 0-9 and 16-21, the key is the offset value itself.
-For offsets 10-15 and 22+, the key is a value from `rand()`.
+- For offsets **0-9** and **16-21**, the key is the **offset value** itself.
+- For offsets **10-15** and **22-more**, the key is a **value** from **`rand()`**.
 
 #### decrypt function
 
-The `decrypt` function performs an **XOR operation** between the key and each character of the string `local_21`, which contains: "Q}|u\`sfg~sf{}|a3" (in hexadecimal: `517d7c75607366677e73667b7d7c6133`).
+The `decrypt` function performs an **XOR operation** between the key and each character of the string `local_21`, which contains: "Q}|u\`sfg~sf{}|a3" *(in hexadecimal: `517d7c75607366677e73667b7d7c6133`)*.
 
-For each character, it performs:
+For each character, it **performs**:
 ```c
 result[i] = ctx ^ local_21[i]
 ```
 
 *(`ctx` is the key.)*
 
-Then, it compares the XORed result to `"Congratulations!"`. If they match, it spawns a shell with `system("/bin/sh")`. Otherwise, it prints `"Invalid Password"`.
+Then, it **compares** the **XORed result** to `"Congratulations!"`. If they match, it **spawns a shell** with `system("/bin/sh")`. Otherwise, it prints `"Invalid Password"`.
 
 ## 3. Reverse The Algorithm
 

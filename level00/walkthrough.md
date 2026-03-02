@@ -56,12 +56,11 @@ Here, we find only the function: `main`.
 
 #### main function
 
-The `main` function asks for a password and checks if it's correct. If the correct password is provided, it prints "Authenticated!" and spawns a shell with `system("/bin/sh")`.
+The `main` function **asks** for a **password** and **checks if it's correct**. If the correct password is provided, it prints "Authenticated!" and **spawns a shell** with `system("/bin/sh")`.
 
 ## 3. Find The Password
 
-With the program decompiled, we can see the `if` statement that checks the password:
-
+With the **program decompiled**, we can see the **`if` statement** that checks the password:
 
 ```c
 if (local_14[0] != 0x149c) {
@@ -72,7 +71,7 @@ if (local_14[0] != 0x149c) {
     system("/bin/sh");
 ```
 
-It compares the input with the value `0x149c` (hexadecimal).
+It compares the input with the value `0x149c` *(in hexadecimal)*.
 
 ```bash
 > python3 -c 'print(0x149c)'

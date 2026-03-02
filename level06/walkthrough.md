@@ -33,7 +33,7 @@ level06@OverRide:~$ ./level06
 -> Enter Serial: level06@OverRide:~$ 
 ```
 
-The program asks for a Login and a Serial.
+The program **asks** for a **Login** and a **Serial**.
 
 ## 2. Analyze The Executable
 
@@ -53,11 +53,11 @@ Here, we find 2 functions: `main`, and `auth`.
 
 ### Stack Canary Protection
 
-This binary uses a **stack canary**. It is a security to detect buffer overflows.
+This binary uses a **stack canary**. It is a **security** to **detect buffer overflows**.
 
-Before a function returns, it checks if a random value placed on the stack has been modified. If the canary value changed it means a buffer overflow occured and the program calls the `__stack_chk_fail()` function to abort execution instead of allowing the exploit.
+Before a **function returns**, it **checks** if a **random value** placed **on the stack** has been modified. If the **canary value changed** it means a **buffer overflow** occured and the program calls the `__stack_chk_fail()` function to **abort execution** instead of allowing the exploit.
 
-In the assembly, we can see:
+In the **assembly**, we can see:
 ```s
 	0x08048889 <+16>:	mov    %gs:0x14,%eax    ; Load canary from TLS
 	0x0804888f <+22>:	mov    %eax,0x4c(%esp)  ; Place canary on stack
@@ -69,7 +69,7 @@ In the assembly, we can see:
    0x08048981 <+264>:	ret    
 ```
 
-And in the C program :
+And in the **C program** :
 ```c
   local_14 = *(int *)(in_GS_OFFSET + 0x14);
   [...]
@@ -84,57 +84,22 @@ And in the C program :
 
 #### main function
 
-The `main` function reads a login with `fgets()` (with a limited size of `0x20`, 32 bytes in decimal) and a serial number with `scanf()`.
+The `main` function **reads** a **login** with `fgets()` *(with a limited size of `0x20`, 32 bytes in decimal)* and a **serial number** with `scanf()`.
 
-Then calls `auth(login, serial)`. If authentication succeeds, it spawns a shell with `system("/bin/sh")`.
+Then calls `auth(login, serial)`. If authentication succeeds, it **spawns a shell** with `system("/bin/sh")`.
 
 #### auth function
 
-The `auth` function calculates a hash from the login string and compares it with the provided serial.
+The `auth` function **calculates** a **hash** from the **login string** and **compares it** with the provided serial.
 
-It first checks that the login is at least 6 characters long and uses `ptrace(PTRACE_TRACEME)` to trace its own process. The hash algorithm uses `XOR` operations and a modulo `0x539`, starting with `(param_1[3] ^ 0x1337) + 0x5eeded`.
+It first **checks** that the **login** is at **least 6 characters long** and uses `ptrace(PTRACE_TRACEME)` to trace its own process. The **hash algorithm** uses `XOR` **operations** and a **modulo** `0x539`, starting with `(param_1[3] ^ 0x1337) + 0x5eeded`.
 
 
 ## 3. Identify The Vulnerability
 
-We need to provide the correct serial number for any login we enter.
+We need to **provide** the **correct serial number** for **any login** we enter.
 
-From the decompiled code, we can implement the hashing algorithm in a C program.
-
-```bash
-> gcc serializer.c -o serializer
-> ./serializer aaaaaa
-argv[1][3] ^ 0x1337U : 4950
-u + 0x5eeded : 6226243
-
-
-argv[1][0] ^ h : 6226210
-c % 0x539 : 1138
-h += g : 6227381
-
-argv[1][1] ^ h : 6227412
-c % 0x539 : 1003
-h += g : 6228384
-
-argv[1][2] ^ h : 6228417
-c % 0x539 : 671
-h += g : 6229055
-
-argv[1][3] ^ h : 6229086
-c % 0x539 : 3
-h += g : 6229058
-
-argv[1][4] ^ h : 6229027
-c % 0x539 : 1281
-h += g : 6230339
-
-argv[1][5] ^ h : 6230306
-c % 0x539 : 1223
-h += g : 6231562
-
-
-serialization of        aaaaaa  : 6231562
-```
+From the **decompiled code**, we can implement the **hashing algorithm** in a C program.
 
 ```bash
 > gcc serializer.c -o serializer
@@ -145,7 +110,7 @@ serialization of        aaaaaa  : 6231562
 to see step by step, use the program with `-d` as 2nd argument.
 ```
 
-So if the Login if `aaaaaa`, the correct Serial is 6231562.
+So if the Login if `aaaaaa`, the correct Serial is **6231562**.
 
 With the step by step algorithm debug flag :
 ```bash

@@ -36,7 +36,7 @@ nope, incorrect username...
 
 ```
 
-The program asks for a username and there is no sign of overflow possible at first sight.
+The program **asks** for a **username** and there is no sign of overflow possible at first sight.
 
 ## 2. Analyze The Executable
 
@@ -59,16 +59,16 @@ Here, we find 3 functions : `main`, `verify_user_name`, `verify_user_pass`.
 
 #### main function
 
-The `main` function ask for a username and verify it with `verify_user_name()`. If the username is valid, it ask a password and verify it with `verify_user_pass()`. In any case, the program will print `"nope, incorrect password..."` and return `1`;
+The `main` function **asks** for a **username** and **verifies it** with `verify_user_name()`. If the username is valid, it **asks** a **password** and **verifies it** with `verify_user_pass()`. In any case, the program **will print `"nope, incorrect password..."`** and return `1`;
 Each time, the `fgets` calls used to get the user input have a limited size of `0x100` (256 bytes in decimal). 
 
 #### verify_user_name function
 
-The `verify_user_name` function compares the username given by the user to `"dat_wil"`. But it only checks if the **first 7 bytes** are equal to this string. The following characters of the username are not check.
+The `verify_user_name` function **compares the username** given by the user to **`"dat_wil"`**. But it only checks if the **first 7 bytes** are equal to this string. The following characters of the username are not check.
 
 #### verify_user_pass function
 
-The `verify_user_pass` function compare the pass given by the user to `"admin"`. But it only checks if the **first 5 bytes** are equal to this string. The following characters of the pass are not check.
+The `verify_user_pass` function **compares the pass** given by the user to **`"admin"`**. But it only checks if the **first 5 bytes** are equal to this string. The following characters of the pass are not check.
 
 ## 3. Exploit Development
 
@@ -124,7 +124,7 @@ A **shellcode** is a **sequence of machine instructions** encoded in hexadecimal
 
 ### Finding the Offset
 
-Using `gdb`, we can get the address of the segfault, and with a specific pattern payload we can easily get the offset. Here is an example payload:
+Using `gdb`, we can get the **address of the segfault**, and with a **specific pattern payload** we can easily get the **offset**. Here is an example payload:
 
 ```
 aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzzAAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ
@@ -148,7 +148,7 @@ Program received signal SIGSEGV, Segmentation fault.
 0x75757575 in ?? ()
 ```
 
-`0x75` is 117 in decimal and `u` in ASCII. So we have an offset of **`80 bytes`**.
+`0x75` is **117** in decimal and **`u`** in ASCII. So we have an offset of **`80 bytes`**.
 
 We can deduce this payload format :
 
@@ -164,7 +164,7 @@ We can deduce this payload format :
 
 ---
 
-We need to find the address of the password string, we can use `ltrace` to trace the function calls with their arguments and return value.
+We need to **find** the **address** of the **password** string, we can use `ltrace` to trace the function calls with their arguments and return value.
 
 ```bash
 level01@OverRide:~$ ltrace ./level01 
@@ -193,7 +193,7 @@ We need to put it in little endian :
 \xec\xd6\xff\xff
 ```
 
-We can also reverse it directly in the Python command with this slice notation `[::-1]` :
+We can also **reverse it** directly in the **Python command** with this **slice notation** `[::-1]` :
 
 ```
 > python3 -c 'print("\xff\xff\xd6\xec"[::-1])'

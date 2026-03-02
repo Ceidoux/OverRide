@@ -331,3 +331,49 @@ void secret_backdoor(void)
 
 
 
+
+
+
+
+
+struct local_c8 {
+  char message[140];
+  char username[40];
+  int lenght;
+}
+
+
+void  set_username():
+
+  char local_98 [140];
+
+  fgets(local_98,0x80,_stdin);    // 128
+  for (local_c = 0; (local_c < 0x29 && (local_98[local_c] != '\0')); local_c = local_c + 1) {
+    *(char *)(param_1 + 0x8c + (long)local_c) = local_98[local_c];
+  }
+
+        local_c8[140]
+strncpy(local_c8->username, local_98, 41)
+==> Atteint c8->length (int pos at c8[181]) ?
+
+peut modifier le plus grand byte de c8->length
+0 -> 256
+0 -> ff ou 100
+256 > struct size (~184)
+
+---
+
+void set_msg():
+
+  char local_408 [1024];
+  fgets(local_408,0x400,_stdin);  //1024
+  strncpy(param_1,local_408,(long)*(int *)(param_1 + 0xb4));    //180
+ 
+        local_c8[0]                   local_c8[180]
+strncpy(local_c8->message, local_408, local_c8->length)
+
+
+avec un size de 256 (ou plus) message > struct ===> overflow EIP
+
+
+EIP -> backdoor -> win!
